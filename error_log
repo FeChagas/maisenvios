@@ -1,0 +1,6 @@
+[14-Jan-2022 08:46:02 America/Fortaleza] PHP Warning:  include(middle/ready-shippings.php): failed to open stream: No such file or directory in /home4/maisen51/public_html/painel/ready-shippings.php on line 39
+[14-Jan-2022 08:46:02 America/Fortaleza] PHP Warning:  include(middle/ready-shippings.php): failed to open stream: No such file or directory in /home4/maisen51/public_html/painel/ready-shippings.php on line 39
+[14-Jan-2022 08:46:02 America/Fortaleza] PHP Warning:  include(): Failed opening 'middle/ready-shippings.php' for inclusion (include_path='.:/opt/cpanel/ea-php74/root/usr/share/pear') in /home4/maisen51/public_html/painel/ready-shippings.php on line 39
+[14-Jan-2022 09:02:19 America/Fortaleza] PHP Warning:  include(middle/new-shipping.php): failed to open stream: No such file or directory in /home4/maisen51/public_html/painel/new-shipping.php on line 39
+[14-Jan-2022 09:02:19 America/Fortaleza] PHP Warning:  include(middle/new-shipping.php): failed to open stream: No such file or directory in /home4/maisen51/public_html/painel/new-shipping.php on line 39
+[14-Jan-2022 09:02:19 America/Fortaleza] PHP Warning:  include(): Failed opening 'middle/new-shipping.php' for inclusion (include_path='.:/opt/cpanel/ea-php74/root/usr/share/pear') in /home4/maisen51/public_html/painel/new-shipping.php on line 39
