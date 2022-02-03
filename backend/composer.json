@@ -1,0 +1,18 @@
+{
+    "name": "maisenvios/middleware",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "Maisenvios\\Middleware\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Felipe",
+            "email": "fechagas.dev@gmail.com"
+        }
+    ],
+    "require": {
+        "php-curl-class/php-curl-class": "^9.5"
+    }
+}
