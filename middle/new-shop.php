@@ -39,6 +39,7 @@
                   <option>Selecione a loja</option>
                   <option value="VTEX">VTEX</option>
                   <option value ="Convertize">Convertize</option>
+                  <option value ="lojaintegrada">Loja Integrada</option>
               </select>
               <br />
           </div>

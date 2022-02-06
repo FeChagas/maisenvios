@@ -1,8 +1,6 @@
 <?php
 namespace Maisenvios\Middleware\Model;
 
-require __DIR__ . '/vendor/autoload.php';
-
 class Shipping {
     private $id;
     private $idShop;
@@ -108,5 +106,15 @@ class Shipping {
         $this->active = $active;
 
         return $this;
+    }
+
+    public function create($arr) {
+        $shipping = new Shipping();
+        $shipping->setId($arr['id']);
+        $shipping->setIdShop($arr['idShop']);
+        $shipping->setName($arr['name']);
+        $shipping->setCorreios($arr['correios']);
+        $shipping->setActive($arr['active']);
+        return $shipping;
     }
 }

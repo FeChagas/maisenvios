@@ -5,7 +5,7 @@
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
-        'reference' => '8137793b19972837b6eef293d50ae05973959de1',
+        'reference' => 'f0ca0153183c94284063ce8e9bffc00be08bcde7',
         'name' => 'maisenvios/middleware',
         'dev' => true,
     ),
@@ -16,7 +16,7 @@
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
-            'reference' => '8137793b19972837b6eef293d50ae05973959de1',
+            'reference' => 'f0ca0153183c94284063ce8e9bffc00be08bcde7',
             'dev_requirement' => false,
         ),
         'php-curl-class/php-curl-class' => array(

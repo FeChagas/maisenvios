@@ -1,8 +1,6 @@
 <?php
 namespace Maisenvios\Middleware\Model;
 
-require __DIR__ . '/vendor/autoload.php';
-
 class SgpPrePost {
     private $identificador;
     private $observacao;
@@ -361,5 +359,66 @@ class SgpPrePost {
         $this->altura = $altura;
 
         return $this;
+    }
+
+    public static function createFromLojaintegrada($payload, $shipping) {
+        $thisObj = new SgpPrePost();
+        // debug($shipping);
+        $thisObj->setIdentificador( $payload->numero );
+        $thisObj->setDestinatario( $payload->endereco_entrega->nome );
+        $thisObj->setDoc( $payload->endereco_entrega->cpf );
+        $thisObj->setEndereco( $payload->endereco_entrega->endereco );
+        $thisObj->setNumero( $payload->endereco_entrega->numero );
+        $thisObj->setBairro( $payload->endereco_entrega->bairro );
+        $thisObj->setCidade( $payload->endereco_entrega->cidade );
+        $thisObj->setUf( $payload->endereco_entrega->estado );
+        $thisObj->setCep( $payload->endereco_entrega->cep );
+        $thisObj->setComplemento( $payload->endereco_entrega->complemento );
+        $thisObj->setEmail( $payload->cliente->email );
+        $thisObj->setPeso( $payload->peso_real );
+
+        //Calcula a cubagem de todos os produtos
+        $comprimento = 0;
+        $largura = 0;
+        $altura = 0;
+        foreach ($payload->itens as $item) {
+            $comprimento += $item->profundidade;
+            $largura += $item->largura;
+            $altura += $item->altura;
+        }
+
+        $thisObj->setComprimento( $comprimento );
+        $thisObj->setLargura( $largura );
+        $thisObj->setAltura( $altura );
+        $thisObj->setServico_correios( $shipping->getCorreios() );
+        // $thisObj->setObservacao();
+        
+        return $thisObj;
+    }
+
+    public static function generatePayload(Array $sgpPrePosts) {
+        $objetos = ["objetos" => []];
+        foreach ($sgpPrePosts as $sgpPrePost) {
+            $json = [];
+            $json['identificador'] = $sgpPrePost->getIdentificador();
+            $json['observacao'] = $sgpPrePost->getObservacao();
+            $json['destinatario'] = $sgpPrePost->getDestinatario();
+            $json['cpf_cnpj'] = $sgpPrePost->getDoc();
+            $json['endereco'] = $sgpPrePost->getEndereco();
+            $json['numero'] = $sgpPrePost->getNumero();
+            $json['bairro'] = $sgpPrePost->getBairro();
+            $json['cidade'] = $sgpPrePost->getCidade();
+            $json['uf'] = $sgpPrePost->getUf();
+            $json['cep'] = $sgpPrePost->getCep();
+            $json['servico_correios'] = $sgpPrePost->getServico_correios();
+            $json['complemento'] = $sgpPrePost->getComplemento();
+            $json['email'] = $sgpPrePost->getEmail();
+            $json['peso'] = $sgpPrePost->getPeso();
+            $json['comprimento'] = $sgpPrePost->getComprimento();
+            $json['largura'] = $sgpPrePost->getLargura();
+            $json['altura'] = $sgpPrePost->getAltura();
+            array_push($objetos['objetos'], $json);
+        }
+        return json_encode($objetos);
     }
 }

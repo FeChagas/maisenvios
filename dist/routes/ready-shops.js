@@ -1,10 +1,10 @@
-  actionUrl = '/painel/php/shop/ready';
-  $.ajax({
-    type: "GET",
-    url: actionUrl,
-    success: function(data){
-      data.forEach(element => {
-        html = `
+actionUrl = "/painel/php/shop/ready";
+$.ajax({
+  type: "GET",
+  url: actionUrl,
+  success: function (data) {
+    data.forEach((element) => {
+      html = `
           <tr>
             <td>${element.id}</td>
             <td>${element.name}</td>
@@ -19,7 +19,7 @@
             </td>
           </tr>
         `;
-        $('#ready-shops').append(html);
-      });
-    }
-  })
+      $("#ready-shops").append(html);
+    });
+  },
+});

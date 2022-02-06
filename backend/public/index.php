@@ -13,18 +13,17 @@ function debug($to_print = false) {
         $debug_arr = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         $line = $debug_arr[0]['line'];
         $file = $debug_arr[0]['file'];
-
+        
         header('Content-Type: text/plain');
-
-        echo "linha: $line\n";
-        echo "arquivo: $file\n\n";
-        print_r(array('GET' => $_GET, 'POST' => $_POST, 'SERVER' => $_SERVER));
-
+        
+        echo "line: $line\n";
+        echo "file: $file\n\n";
         if ($to_print) {
             print_r($to_print);
         }
+        print_r(array('GET' => $_GET, 'POST' => $_POST, 'SERVER' => $_SERVER));
         exit;
     }
 }
 
-new IntegrationController();
+(new IntegrationController())->run();
