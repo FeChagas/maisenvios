@@ -24,9 +24,10 @@ class IntegrationController {
     }
 
     public function run() {
-        //list all shops
-        //TODO: search for the next shop to run
-        $shops = $this->shopRepo->findAll(['ecommerce' => 'lojaintegrada', 'active' => 1]);
+        //get the next shop to run
+        //this search grabs the log and check the most recent log of each shop
+        //and get the older from this group
+        $shops = $this->shopRepo->findNextLojaIntegradaToRun();
         foreach ($shops as $shop) {
             switch ($shop->getEcommerce()) {
                 case 'lojaintegrada':
@@ -41,23 +42,43 @@ class IntegrationController {
     }
 
     private function integrateLojaIntegrada($shop) {
+        //Check if the shop has keys
         if (!$shop->getCustomerKey() || !$shop->getCustomerToken()) {
-            debug($shop);
-            //TODO: log fail
-            return;            
+            $log = new SgpLog();
+            $log->setShopId( $shop->getId() );
+            $log->setStatus('Shop não possui chaves cadastradas');
+            $this->sgpLogRepo->create($log);
+        } else {
+            //instanciate a new client
+            $sgpClient = new Sgp($shop->getSysKey());
+            $lojaIntegradaClient = new Lojaintegrada( $shop->getCustomerKey() , $shop->getCustomerToken() );
+            //grab orders to integrate
+            $since = date("Y/m/d\TH:i:s", strtotime("yesterday"));
+            $ordersResponse = $lojaIntegradaClient->listOrders(['since_criado' => $since]);
+            //TODO: testar o filtro da data, ainda não foi possivel por conta da chave ser invalida
+            debug($ordersResponse);
+            if ($ordersResponse->response) {
+                $orders = $ordersResponse->response;
+                foreach ($orders as $order) {
+                    //TODO: testar a validação do log, ainda não foi possivel por conta da chave ser invalida 
+                    $logHistory = $this->sgpLogRepo->findOneBy(['shopId' => $shop->getId(), 'orderId' => $order->numero, 'status_processamento' => 1]);
+                    if (!$logHistory) {
+                        $fullOrder = $lojaIntegradaClient->getOrder($order->numero);
+                        $shipping = $this->shippingRepo->findOneBy([ 'idShop' => $shop->getId(), 'name' => $fullOrder->envios[0]->forma_envio->nome ]);
+                        $sgpObj = SgpPrePost::createFromLojaintegrada($fullOrder, $shipping[0]);
+                        $json = SgpPrePost::generatePayload([$sgpObj]);
+                        $result = $sgpClient->createPrePost($json);
+                        $log = SgpLog::createFromSgpResponse($shop->getId(), $fullOrder->numero, $result);
+                        $this->sgpLogRepo->create($log);
+                    }
+                }
+            } else {
+                $log = new SgpLog();
+                $log->setShopId( $shop->getId() );
+                $log->setStatus($ordersResponse);
+                $this->sgpLogRepo->create($log);
+            }
         }
-        $sgpClient = new Sgp($shop->getSysKey());
-        $lojaIntegradaClient = new Lojaintegrada( $shop->getCustomerKey() , $shop->getCustomerToken() );
-        $orders = $lojaIntegradaClient->listOrders();
-        foreach ($orders as $order) {
-            $fullOrder = $lojaIntegradaClient->getOrder($order->numero);
-            $shipping = $this->shippingRepo->findOneBy([ 'idShop' => $shop->getId(), 'name' => $fullOrder->envios[0]->forma_envio->nome ]);
-            $sgpObj = SgpPrePost::createFromLojaintegrada($fullOrder, $shipping[0]);
-            $json = SgpPrePost::generatePayload([$sgpObj]);
-            $result = $sgpClient->createPrePost($json);
-            $log = SgpLog::createFromSgpResponse($shop->getId(), $fullOrder->numero, $result);
-            $s = $this->sgpLogRepo->create($log);
-            debug($log);
-        }
+        return;
     }
 }

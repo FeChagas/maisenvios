@@ -6,7 +6,7 @@ use Maisenvios\Middleware\Controller\IntegrationController;
 
 $is_dev = true;
 
-function debug($to_print = false) {
+function debug($to_print = false, $show_details = false) {
     global $is_dev;
 
     if ($is_dev) {
@@ -18,10 +18,12 @@ function debug($to_print = false) {
         
         echo "line: $line\n";
         echo "file: $file\n\n";
-        if ($to_print) {
+        if ($to_print !== false) {
             print_r($to_print);
         }
-        print_r(array('GET' => $_GET, 'POST' => $_POST, 'SERVER' => $_SERVER));
+        if ($show_details) {
+            print_r(array('GET' => $_GET, 'POST' => $_POST, 'SERVER' => $_SERVER));
+        }
         exit;
     }
 }
