@@ -11,7 +11,7 @@ class ShopRepository extends BaseRepository {
     }
 
     public function findNextLojaIntegradaToRun() {
-        $where = ['active' => 1/* , 'ecommerce' => 'lojaintegrada' */];
+        $where = ['active' => 1, 'ecommerce' => 'lojaintegrada'];
         $join = [ 'sgp_logs' => [ 'parentKey' => 'id', 'childKey' => 'shopId','where' => []]];
         $select = ['shop.id', 'MAX(sgp_logs.createdAt) AS `lastRunAt`'];
         $groupBy = ['shop.id'];

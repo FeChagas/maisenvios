@@ -53,29 +53,35 @@ class IntegrationController {
             $sgpClient = new Sgp($shop->getSysKey());
             $lojaIntegradaClient = new Lojaintegrada( $shop->getCustomerKey() , $shop->getCustomerToken() );
             //grab orders to integrate
-            $since = date("Y/m/d\TH:i:s", strtotime("yesterday"));
-            $ordersResponse = $lojaIntegradaClient->listOrders(['since_criado' => $since]);
-            //TODO: testar o filtro da data, ainda não foi possivel por conta da chave ser invalida
-            debug($ordersResponse);
-            if ($ordersResponse->response) {
-                $orders = $ordersResponse->response;
-                foreach ($orders as $order) {
+            $since = date("Y-m-d H:i:s", strtotime("yesterday"));
+            $ordersResponse = $lojaIntegradaClient->listOrders(['since_criado' => $since, 'situacao_id' => 4, 'limit' => 20]);
+            if ($ordersResponse->objects) {
+                foreach ($ordersResponse->objects as $order) {
                     //TODO: testar a validação do log, ainda não foi possivel por conta da chave ser invalida 
                     $logHistory = $this->sgpLogRepo->findOneBy(['shopId' => $shop->getId(), 'orderId' => $order->numero, 'status_processamento' => 1]);
                     if (!$logHistory) {
                         $fullOrder = $lojaIntegradaClient->getOrder($order->numero);
                         $shipping = $this->shippingRepo->findOneBy([ 'idShop' => $shop->getId(), 'name' => $fullOrder->envios[0]->forma_envio->nome ]);
-                        $sgpObj = SgpPrePost::createFromLojaintegrada($fullOrder, $shipping[0]);
-                        $json = SgpPrePost::generatePayload([$sgpObj]);
-                        $result = $sgpClient->createPrePost($json);
-                        $log = SgpLog::createFromSgpResponse($shop->getId(), $fullOrder->numero, $result);
-                        $this->sgpLogRepo->create($log);
+                        if(count($shipping) > 0) {
+                            $sgpObj = SgpPrePost::createFromLojaintegrada($fullOrder, $shipping[0]);
+                            $json = SgpPrePost::generatePayload([$sgpObj]);
+                            $result = $sgpClient->createPrePost($json);
+                            $log = SgpLog::createFromSgpResponse($shop->getId(), $fullOrder->numero, $result);
+                            $this->sgpLogRepo->create($log);
+                        } else {
+                            $log = new SgpLog();
+                            $log->setShopId( $shop->getId() );
+                            $log->setOrderId($fullOrder->numero);
+                            $log->setStatus("Forma de envio {$fullOrder->envios[0]->forma_envio->nome} não encontrada");
+                            $this->sgpLogRepo->create($log);
+                        }
                     }
                 }
             } else {
                 $log = new SgpLog();
                 $log->setShopId( $shop->getId() );
-                $log->setStatus($ordersResponse);
+                $log->setStatus( "nenhum pedido encontrado" );
+                $log->setObjetos( json_encode($ordersResponse) );
                 $this->sgpLogRepo->create($log);
             }
         }

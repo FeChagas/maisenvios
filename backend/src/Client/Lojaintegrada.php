@@ -9,7 +9,7 @@ class Lojaintegrada {
     private $connection;
     private $key;
     private $token;
-    private $endpoint = 'https://api.awsli.com.br/v1/';
+    private $endpoint = 'https://api.awsli.com.br/v1';
 
     public function __construct($key, $token)
     {
@@ -19,18 +19,18 @@ class Lojaintegrada {
     }
 
     public function listOrders(Array $args = []) {
-        $args['limit'] = 20;
-        $this->connection->get("{$this->endpoint}pedido/search/", $args); // The API limit is 20, sadly.
+        $args['limit'] = ($args['limit']) ? $args['limit'] : 20;
+        $this->connection->get("{$this->endpoint}/pedido/search/", $args); // The API limit is 20, sadly.
         return $this->connection->response;
     }
 
     public function getOrder($id) {
-        $this->connection->get($this->endpoint . "pedido/{$id}");
+        $this->connection->get("{$this->endpoint}/pedido/{$id}");
         return $this->connection->response;
     }
 
     public function addShippingCode($packageId, $trackingId) {
-        $this->connection->put("{$this->endpoint}pedido_envio/{$packageId}", ["objeto" => $trackingId]);
+        $this->connection->put("{$this->endpoint}/pedido_envio/{$packageId}", ["objeto" => $trackingId]);
         return $this->connection->response;
     }
 }
