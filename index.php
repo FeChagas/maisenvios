@@ -1,4 +1,7 @@
 <?php
+/* 
+ * Parametro para tornar a chamada da integração mais simples
+ */
 if ($_GET['run-integrated-jobs']) {
     require_once "backend/index.php";
 }
