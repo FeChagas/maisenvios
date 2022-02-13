@@ -1,3 +1,8 @@
+<?php
+if ($_GET['run-integrated-jobs']) {
+    require_once "backend/index.php";
+}
+?>
 <!DOCTYPE html>
 <!--
 Template Name: Tinker - HTML Admin Dashboard Template

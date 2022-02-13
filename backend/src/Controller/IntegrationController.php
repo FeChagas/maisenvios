@@ -54,7 +54,8 @@ class IntegrationController {
             $lojaIntegradaClient = new Lojaintegrada( $shop->getCustomerKey() , $shop->getCustomerToken() );
             //grab orders to integrate
             $since = date("Y-m-d H:i:s", strtotime("yesterday"));
-            $ordersResponse = $lojaIntegradaClient->listOrders(['since_criado' => $since, 'situacao_id' => 4, 'limit' => 20]);
+            $orderQuery = ['since_criado' => $since, 'situacao_id' => 4, 'limit' => 20];
+            $ordersResponse = $lojaIntegradaClient->listOrders( $orderQuery );
             if ($ordersResponse->objects) {
                 foreach ($ordersResponse->objects as $order) {
                     //TODO: testar a validação do log, ainda não foi possivel por conta da chave ser invalida 
@@ -81,7 +82,7 @@ class IntegrationController {
                 $log = new SgpLog();
                 $log->setShopId( $shop->getId() );
                 $log->setStatus( "nenhum pedido encontrado" );
-                $log->setObjetos( json_encode($ordersResponse) );
+                $log->setObjetos( json_encode( $orderQuery ) );
                 $this->sgpLogRepo->create($log);
             }
         }
