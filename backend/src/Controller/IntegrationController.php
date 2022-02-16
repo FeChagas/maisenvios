@@ -8,7 +8,7 @@ use Maisenvios\Middleware\Repository\SgpLogRepository;
 use Maisenvios\Middleware\Client\Lojaintegrada;
 use Maisenvios\Middleware\Client\Sgp;
 use Maisenvios\Middleware\Model\SgpLog;
-use stdClass;
+use Maisenvios\Middleware\Controller\LogController;
 
 class IntegrationController {
 
@@ -24,6 +24,9 @@ class IntegrationController {
     }
 
     public function run() {
+        //before each run, we warm up the logs just in case
+        LogController::warmUp();
+
         //get the next shop to run
         //this search grabs the log and check the most recent log of each shop
         //and get the older from this group

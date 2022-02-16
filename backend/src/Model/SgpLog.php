@@ -159,4 +159,14 @@ class SgpLog {
         $log->setObjetos(json_encode($obj->retorno->objetos));
         return $log;
     }
+
+    public function create($arr) {
+        $log = new SgpLog();
+        $log->setShopId($arr['shopId']);
+        $log->setOrderId($arr['orderId']);
+        $log->setStatus_processamento($arr['status_processamento']);
+        $log->setStatus($arr['status']);
+        $log->setObjetos($arr['objetos']);
+        return $log;
+    }
 }
