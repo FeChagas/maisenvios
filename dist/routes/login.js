@@ -14,13 +14,13 @@ $("#login").submit(function(e) {
       {
         var json = data;
         
-        if(json[0].status == 1){
+        if(json[0].status === 1){
           Swal.fire(
             'Atenção!',
             'Usuário ou senha incorretos',
             'error'
           )
-        }else if(json[0].status == 0){
+        }else if(json[0].status === 0){
           location.href = '/painel/ready-shops';
         }
       }

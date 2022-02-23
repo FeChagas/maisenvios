@@ -1,0 +1,27 @@
+{
+    "meta": {
+        "limit": 10,
+        "next": "/api/v1/pedido/?limit=10&offset=10&since_numero=345&situacao_id=1&pagamento_id=1",
+        "offset": 0,
+        "previous": null,
+        "total_count": 1
+    },
+    "response": [
+        {
+            "id": 1,
+            "numero": 345,
+            "cliente_id": 1,
+            "valor_subtotal": 100.10,
+            "valor_envio": 10.00,
+            "valor_desconto": 5.00,
+            "valor_total": 105.10,
+            "data_criacao": "2013-01-01 00:00:00",
+            "data_modificacao": "2013-01-01 00:00:00",
+            "data_expiracao": "2013-01-10 00:00:00"
+        }
+    ],
+    "notification": {
+        "code": 200,
+        "message": "OK"
+    }
+}

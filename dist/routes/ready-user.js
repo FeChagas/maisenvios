@@ -1,10 +1,10 @@
-  actionUrl = '/painel/php/users/ready';
-  $.ajax({
-    type: "GET",
-    url: actionUrl,
-    success: function(data){
-      data.forEach(element => {
-        html = `
+actionUrl = "/painel/php/users/ready";
+$.ajax({
+  type: "GET",
+  url: actionUrl,
+  success: function (data) {
+    data.forEach((element) => {
+      html = `
           <tr>
             <td>${element.id}</td>
             <td>${element.name}</td>
@@ -12,7 +12,7 @@
             <td>${element.active}</td>
           </tr>
         `;
-        $('#ready-users').append(html);
-      });
-    }
-  })
+      $("#ready-users").append(html);
+    });
+  },
+});
