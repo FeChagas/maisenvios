@@ -9,6 +9,7 @@ use Maisenvios\Middleware\Client\Lojaintegrada;
 use Maisenvios\Middleware\Client\Sgp;
 use Maisenvios\Middleware\Model\SgpLog;
 use Maisenvios\Middleware\Controller\LogController;
+use Maisenvios\Middleware\Client\Convertize;
 
 class IntegrationController {
 
@@ -26,19 +27,25 @@ class IntegrationController {
     public function run() {
         //before each run, we warm up the logs just in case
         LogController::warmUp();
-
         //get the next shop to run
         //this search grabs the log and check the most recent log of each shop
         //and get the older from this group
-        $shops = $this->shopRepo->findNextLojaIntegradaToRun();
+        $shops = $this->shopRepo->findNextToRun();
         foreach ($shops as $shop) {
             switch ($shop->getEcommerce()) {
                 case 'lojaintegrada':
                     $this->integrateLojaIntegrada($shop);
                     break;
                 
+                case 'Convertize':
+                    $this->integrateConvertize($shop);
+                    break;
                 default:
-                    # code...
+                    $log = new SgpLog();
+                    $log->setShopId( $shop->getId() );
+                    $log->setStatus("Integração com {$shop->getEcommerce()} não está preparada");
+                    $this->sgpLogRepo->create($log);
+                    debug($shop);
                     break;
             }
         }
@@ -61,7 +68,6 @@ class IntegrationController {
             $ordersResponse = $lojaIntegradaClient->listOrders( $orderQuery );
             if ($ordersResponse->objects) {
                 foreach ($ordersResponse->objects as $order) {
-                    //TODO: testar a validação do log, ainda não foi possivel por conta da chave ser invalida 
                     $logHistory = $this->sgpLogRepo->findOneBy(['shopId' => $shop->getId(), 'orderId' => $order->numero, 'status_processamento' => 1]);
                     if (!$logHistory) {
                         $fullOrder = $lojaIntegradaClient->getOrder($order->numero);
@@ -90,5 +96,58 @@ class IntegrationController {
             }
         }
         return;
+    }
+
+    private function integrateConvertize($shop) {
+        if (!$shop->getCustomerToken()) {
+            $log = new SgpLog();
+            $log->setShopId( $shop->getId() );
+            $log->setStatus('Shop não possui chaves cadastradas');
+            $this->sgpLogRepo->create($log);
+        } else {
+            $sgpClient = new Sgp($shop->getSysKey());
+            $convertizeClient = new Convertize($shop->getAccount(), $shop->getCustomerToken());
+            foreach ($this->shippingRepo->findAll(['idShop' => 15, 'active' => 1]) as $shipping) {
+                $orders = [];
+                do {
+                    $orderQuery = ['status'=> 'FAT', 'shipping_type' => $shipping->getName()];
+                    $result = $convertizeClient->listOrders($orderQuery);
+                    array_push($orders, ...$result->results);
+                    //Só ativar o loop caso seja realmente necessario
+                } while (1 > 1);
+
+                if (count($orders) > 0) {
+                    foreach ($orders as $order) {
+                        $logHistory = $this->sgpLogRepo->findOneBy(['shopId' => $shop->getId(), 'orderId' => $order->id, 'status_processamento' => 1]);
+                        //Verifica se já existe um envio bem sucedido, caso sim, aborta
+                        if (!$logHistory) {
+                            $sgpObj = SgpPrePost::createFromConvertize($order, $shipping);
+                            $json = SgpPrePost::generatePayload([$sgpObj]);
+                            $result = $sgpClient->createPrePost($json);
+                            //Define o código de rastreio e status do pedido
+                            foreach ($result->retorno->objetos as $objeto) {
+                                $payloadStatus = ["status" => "ETP"];
+                                $payloadTracker = [
+                                    "code" => $objeto->objeto,
+                                    "status" => "ETP"
+                                ];
+                                $convertizeClient->setOrderTracker($order->id, $payloadTracker);
+                                $convertizeClient->setOrderStatus($order->id, $payloadStatus);
+                            }
+                            $log = SgpLog::createFromSgpResponse($shop->getId(), $order->id, $result);
+                            $this->sgpLogRepo->create($log);
+                        }
+                    }
+                } else {
+                    $log = new SgpLog();
+                    $log->setShopId( $shop->getId() );
+                    $log->setStatus( "nenhum pedido encontrado" );
+                    $log->setObjetos( json_encode( $orderQuery ) );
+                    $this->sgpLogRepo->create($log);
+                }
+
+                debug($orders);
+            }
+        }
     }
 }

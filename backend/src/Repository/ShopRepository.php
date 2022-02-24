@@ -10,8 +10,8 @@ class ShopRepository extends BaseRepository {
         parent::__construct('shop', Shop::class);
     }
 
-    public function findNextLojaIntegradaToRun() {
-        $where = ['active' => 1, 'ecommerce' => 'lojaintegrada'];
+    public function findNextToRun() {
+        $where = ['active' => 1];
         $join = [ 'sgp_logs' => [ 'parentKey' => 'id', 'childKey' => 'shopId','where' => []]];
         $select = ['shop.id', 'MAX(sgp_logs.createdAt) AS `lastRunAt`'];
         $groupBy = ['shop.id'];
