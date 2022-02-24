@@ -396,6 +396,30 @@ class SgpPrePost {
         return $thisObj;
     }
 
+    public static function createFromConvertize($payload, $shipping) {
+        $thisObj = new SgpPrePost();
+
+        $thisObj->setIdentificador( $payload->id );
+        $thisObj->setObservacao("Pedido N'{$payload->id}");
+        $thisObj->setDestinatario( $payload->shipping_detail_name );
+        $thisObj->setDoc( $payload->shipping_detail_document );
+        $thisObj->setEndereco( $payload->shipping_detail_address );
+        $thisObj->setNumero( $payload->shipping_detail_number );
+        $thisObj->setBairro( $payload->shipping_detail_neighborhood );
+        $thisObj->setCidade( $payload->shipping_detail_city );
+        $thisObj->setUf( $payload->shipping_detail_state );
+        $thisObj->setCep( $payload->shipping_detail_postcode );
+        $thisObj->setComplemento( $payload->shipping_detail_complement );
+        $thisObj->setEmail( $payload->shipping_detail_email );
+        $thisObj->setPeso( 100 );
+        $thisObj->setComprimento( 11 );
+        $thisObj->setLargura( 2 );
+        $thisObj->setAltura( 16 );
+        $thisObj->setServico_correios( $shipping->getCorreios() );
+
+        return $thisObj;
+    }
+
     public static function generatePayload(Array $sgpPrePosts) {
         $objetos = ["objetos" => []];
         foreach ($sgpPrePosts as $sgpPrePost) {
