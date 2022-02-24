@@ -398,9 +398,9 @@ class SgpPrePost {
 
     public static function createFromConvertize($payload, $shipping) {
         $thisObj = new SgpPrePost();
-
+        $date = (new \DateTime())->format('Y-m-d H:i:s');
         $thisObj->setIdentificador( $payload->id );
-        $thisObj->setObservacao("Pedido N'{$payload->id}");
+        $thisObj->setObservacao("Mensagem automática: Pedido nº '{$payload->id} integrado via Painel Integrador +Envios ({$date})");
         $thisObj->setDestinatario( $payload->shipping_detail_name );
         $thisObj->setDoc( $payload->shipping_detail_document );
         $thisObj->setEndereco( $payload->shipping_detail_address );
