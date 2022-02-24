@@ -107,7 +107,8 @@ class IntegrationController {
         } else {
             $sgpClient = new Sgp($shop->getSysKey());
             $convertizeClient = new Convertize($shop->getAccount(), $shop->getCustomerToken());
-            foreach ($this->shippingRepo->findAll(['idShop' => 15, 'active' => 1]) as $shipping) {
+            $shippings = $this->shippingRepo->findAll(['idShop' => 15, 'active' => 1]);
+            foreach ($shippings as $shipping) {
                 $orders = [];
                 do {
                     $orderQuery = ['status'=> 'FAT', 'shipping_type' => $shipping->getName()];
@@ -145,8 +146,6 @@ class IntegrationController {
                     $log->setObjetos( json_encode( $orderQuery ) );
                     $this->sgpLogRepo->create($log);
                 }
-
-                debug($orders);
             }
         }
     }
