@@ -45,7 +45,6 @@ class IntegrationController {
                     $log->setShopId( $shop->getId() );
                     $log->setStatus("Integração com {$shop->getEcommerce()} não está preparada");
                     $this->sgpLogRepo->create($log);
-                    debug($shop);
                     break;
             }
         }
