@@ -8,10 +8,6 @@
   if ($result->num_rows > 0) {
     while($row = $result->fetch_assoc()) {
 
-      $update = "UPDATE `orders` SET `integrated` = '1' WHERE `orders`.`id` = ".$row['id'];
-      $results = $link->query($update);
-      echo $update;
-      echo '<br />';
       $curl = curl_init();
 
       curl_setopt_array($curl, array(
@@ -83,6 +79,17 @@
         ));
       
         $response = curl_exec($curl);
+
+        $update = "UPDATE `orders` SET `integrated` = '1' WHERE `orders`.`id` = ".$row['id'];
+        $results = $link->query($update);
+        echo $update;
+        echo '<br />';
+      } else {
+        //Para diferenciar o pedido que foi integrado de um pedido que não deveria ser integrado pq não tem o metodo de entrega correto
+        $update = "UPDATE `orders` SET `integrated` = '2' WHERE `orders`.`id` = ".$row['id'];
+        $results = $link->query($update);
+        echo $update;
+        echo '<br />';
       }
     }
   }

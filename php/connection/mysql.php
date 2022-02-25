@@ -1,5 +1,5 @@
 <?php
-$link = mysqli_connect("localhost:3306", "maisen51_painel", "QazWsx12", "maisen51_painel");
+$link = mysqli_connect("ns1010.hostgator.com.br:3306", "maisen51_painel", "QazWsx12", "maisen51_painel");
  
 if (!$link) {
     echo "Error: Falha ao conectar-se com o banco de dados MySQL." . PHP_EOL;
