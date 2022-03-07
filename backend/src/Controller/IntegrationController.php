@@ -63,7 +63,7 @@ class IntegrationController {
             $lojaIntegradaClient = new Lojaintegrada( $shop->getCustomerKey() , $shop->getCustomerToken() );
             //grab orders to integrate
             $since = date("Y-m-d H:i:s", strtotime("yesterday"));
-            $orderQuery = ['since_criado' => $since, 'situacao_id' => 4, 'limit' => 20];
+            $orderQuery = ['since_criado' => $since, 'situacao_id' => 9, 'limit' => 20]; // Situação do pedido ID 9: Pedido Efetuado (padrão)
             $ordersResponse = $lojaIntegradaClient->listOrders( $orderQuery );
             if ($ordersResponse->objects) {
                 foreach ($ordersResponse->objects as $order) {
