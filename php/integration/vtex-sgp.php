@@ -33,7 +33,7 @@
       $pedidos = json_decode($response);
       $sla = $pedidos->shippingData->logisticsInfo[0]->selectedSla;
       $deliveryCompany = $pedidos->shippingData->logisticsInfo[0]->deliveryCompany;
-      if($deliveryCompany === $row['name']){
+      if($deliveryCompany == $row['name']){
         $servicos = $row['correios'];
 
         $importacao = '
@@ -82,14 +82,6 @@
 
         $update = "UPDATE `orders` SET `integrated` = '1' WHERE `orders`.`id` = ".$row['id'];
         $results = $link->query($update);
-        echo $update;
-        echo '<br />';
-      } else {
-        //Para diferenciar o pedido que foi integrado de um pedido que não deveria ser integrado pq não tem o metodo de entrega correto
-        $update = "UPDATE `orders` SET `integrated` = '2' WHERE `orders`.`id` = ".$row['id'];
-        $results = $link->query($update);
-        echo $update;
-        echo '<br />';
       }
     }
   }
