@@ -18,7 +18,6 @@ class VtexController {
     public function __construct(Shop $shop)
     {
         $this->sgpLogRepo = new SgpLogRepository();
-
         if (strcmp($shop->getEcommerce(), 'VTEX') !== 0) {
             throw new \Exception("Trying to use an non-VTEX shop on VtexController", 1);            
         }
