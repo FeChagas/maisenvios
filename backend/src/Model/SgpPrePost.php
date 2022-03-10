@@ -19,6 +19,7 @@ class SgpPrePost {
     private $comprimento;
     private $largura;
     private $altura;
+    private $nota_fiscal;
     
 
     /**
@@ -361,6 +362,26 @@ class SgpPrePost {
         return $this;
     }
 
+     /**
+     * Get the value of nota_fiscal
+     */ 
+    public function getNota_fiscal()
+    {
+        return $this->nota_fiscal;
+    }
+
+    /**
+     * Set the value of nota_fiscal
+     *
+     * @return  self
+     */ 
+    public function setNota_fiscal($nota_fiscal)
+    {
+        $this->nota_fiscal = $nota_fiscal;
+
+        return $this;
+    }
+
     public static function createFromLojaintegrada($payload, $shipping) {
         $thisObj = new SgpPrePost();
         $date = (new \DateTime())->format('Y-m-d H:i:s');
@@ -444,5 +465,29 @@ class SgpPrePost {
             array_push($objetos['objetos'], $json);
         }
         return json_encode($objetos);
+    }
+
+    public static function createFromVtex($payload, $shipping) {
+        $thisObj = new SgpPrePost();
+        $date = (new \DateTime())->format('Y-m-d H:i:s');
+        $thisObj->setIdentificador( $payload->orderId );
+        $thisObj->setObservacao("Mensagem automática: Pedido nº '{$payload->orderId} integrado via Painel Integrador +Envios ({$date})");
+        $thisObj->setDestinatario( $payload->shippingData->address->receiverName );
+        $thisObj->setDoc( $payload->document );
+        $thisObj->setEndereco( $payload->shippingData->address->street );
+        $thisObj->setNumero( $payload->shippingData->address->number );
+        $thisObj->setBairro( $payload->shippingData->address->neighborhood );
+        $thisObj->setCidade( $payload->shippingData->address->city );
+        $thisObj->setUf( $payload->shippingData->address->state );
+        $thisObj->setCep( $payload->shippingData->address->postalCode );
+        $thisObj->setComplemento( $payload->shippingData->address->complement );
+        $thisObj->setEmail( $payload->clientProfileData->email );
+        $thisObj->setPeso( 100 );
+        $thisObj->setComprimento( 11 );
+        $thisObj->setLargura( 2 );
+        $thisObj->setAltura( 16 );        
+        (isset($payload->packageAttachment->packages[0]->invoiceNumber)) ? $thisObj->setNota_fiscal($payload->packageAttachment->packages[0]->invoiceNumber) : null;
+        $thisObj->setServico_correios( $shipping->getCorreios() );
+        return $thisObj;
     }
 }
