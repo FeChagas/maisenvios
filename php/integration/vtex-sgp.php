@@ -56,7 +56,8 @@
                 "peso": 100,
                 "comprimento": 11,
                 "largura": 2,
-                "altura": 16
+                "altura": 16,
+                "nota_fiscal": "' . $pedidos->packageAttachment->packages[0]->invoiceNumber . '"
               }
             ]
         }
