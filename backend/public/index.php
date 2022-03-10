@@ -36,7 +36,7 @@ if (isset($_GET['shop_id']) && !is_null($_GET['shop_id']) && strcmp($_GET['metho
     if (isset($_GET['shop_id']) && !is_null($_GET['shop_id'])) {        
         
         $log = new SgpLog();
-        $log->setObjetos(array('GET' => $_GET, 'POST' => $_POST, 'SERVER' => $_SERVER));
+        $log->setObjetos(json_encode( array('GET' => $_GET, 'POST' => $_POST, 'SERVER' => $_SERVER) ));
         $log->setShopId($_GET['shop_id']);
         $log->setStatus('Feed VTEX recebido');
         (new SgpLogRepository())->create($log);
