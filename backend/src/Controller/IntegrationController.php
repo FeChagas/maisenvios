@@ -31,8 +31,8 @@ class IntegrationController {
         //get the next shop to run
         //this search grabs the log and check the most recent log of each shop
         //and get the older from this group
-        // $shops = $this->shopRepo->findNextToRun();
-        $shops = $this->shopRepo->findOneBy(['id' => 12]);
+        $shops = $this->shopRepo->findNextToRun();
+        // $shops = $this->shopRepo->findOneBy(['id' => 12]);
         foreach ($shops as $shop) {
             switch ($shop->getEcommerce()) {
                 case 'lojaintegrada':
