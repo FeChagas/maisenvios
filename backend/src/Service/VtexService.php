@@ -16,6 +16,10 @@ class VtexService {
     {
         $this->sgpLogRepo = new SgpLogRepository();
         if (strcmp($shop->getEcommerce(), 'VTEX') !== 0) {
+            $log = new SgpLog();
+            $log->setShopId( $shop->getId() );
+            $log->setStatus("Algo deu errado, uma loja não VTEX está tentando acessar seus controladores.");
+            $this->sgpLogRepo->create($log);
             throw new \Exception("Trying to use an non-VTEX shop on VtexService", 1);            
         }        
         

@@ -17,8 +17,8 @@ class Vtex {
         $this->connection->setHeader('X-VTEX-API-AppToken', $token);
     }
 
-    public function getOrder($id) {
-        $this->connection->get("{$this->endpoint}/oms/pvt/orders/{$id}");
+    public function getOrder($args) {
+        $this->connection->get("{$this->endpoint}/oms/pvt/orders/{$args}");
         return $this->connection->response;
     }
 
@@ -45,6 +45,6 @@ class Vtex {
     public function commit(array $args) {
         $this->connection->post("{$this->endpoint}/orders/feed", $args);
         return $this->connection->response;
-    }    
+    }
 }
 ?>

@@ -108,6 +108,19 @@ class Order {
         return $this;
     }
 
+    /* 
+    * Creates an Order object 
+    */
+    public static function create($arr) {
+        $order = new Order();
+        ($arr['id']) ? $order->setId($arr['id']) : null; 
+        ($arr['name']) ? $order->setOrderId($arr['orderId']) : null; 
+        ($arr['key_mais']) ? $order->setStoreId($arr['storeId']) : null; 
+        ($arr['key_primary']) ? $order->setIntegrated($arr['integrated']) : null; 
+        ($arr['token_primary']) ? $order->setCreatedAt($arr['createdAt']) : null; 
+        return $order;
+    }
+
     public function createFromVtexFeed($order, $storeId) {
         $order = new Order();
         $order->setOrderId($order->orderId);
