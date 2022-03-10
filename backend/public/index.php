@@ -3,6 +3,10 @@
 require dirname(__DIR__).'/vendor/autoload.php';
 
 use Maisenvios\Middleware\Controller\IntegrationController;
+use Maisenvios\Middleware\Controller\VtexController;
+use Maisenvios\Middleware\Model\SgpLog;
+use Maisenvios\Middleware\Repository\SgpLogRepository;
+use Maisenvios\Middleware\Repository\ShopRepository;
 
 $is_dev = true;
 
@@ -28,4 +32,20 @@ function debug($to_print = false, $show_details = false) {
     }
 }
 
-(new IntegrationController())->run();
+if (isset($_GET['shop_id']) && !is_null($_GET['shop_id']) && strcmp($_GET['method'], 'vtex-order-hook') === 0) {
+    if (isset($_GET['shop_id']) && !is_null($_GET['shop_id'])) {        
+        
+        $log = new SgpLog();
+        $log->setObjetos(array('GET' => $_GET, 'POST' => $_POST, 'SERVER' => $_SERVER));
+        $log->setShopId($_GET['shop_id']);
+        $log->setStatus('Feed VTEX recebido');
+        (new SgpLogRepository())->create($log);
+
+        $shops = (new ShopRepository())->findOneBy(['id' => $_GET['shop_id']]);
+        foreach ($shops as $shop) {
+            (new VtexController($shop))->processFeed($_POST);
+        }
+    }
+} else {
+    (new IntegrationController())->run();
+}

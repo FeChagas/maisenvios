@@ -10,6 +10,7 @@ use Maisenvios\Middleware\Client\Sgp;
 use Maisenvios\Middleware\Model\SgpLog;
 use Maisenvios\Middleware\Controller\LogController;
 use Maisenvios\Middleware\Client\Convertize;
+use Maisenvios\Middleware\Service\VtexService;
 
 class IntegrationController {
 
@@ -31,6 +32,7 @@ class IntegrationController {
         //this search grabs the log and check the most recent log of each shop
         //and get the older from this group
         $shops = $this->shopRepo->findNextToRun();
+        // $shops = $this->shopRepo->findOneBy(['id' => 12]);
         foreach ($shops as $shop) {
             switch ($shop->getEcommerce()) {
                 case 'lojaintegrada':
@@ -39,6 +41,10 @@ class IntegrationController {
                 
                 case 'Convertize':
                     $this->integrateConvertize($shop);
+                    break;
+                
+                case 'VTEX':
+                    $this->integrateVtex($shop);
                     break;
                 default:
                     $log = new SgpLog();
@@ -147,5 +153,11 @@ class IntegrationController {
                 }
             }
         }
+    }
+
+    private function integrateVtex($shop) {
+        $service = new VtexService($shop);
+        $service->validateOrderFeedAndHook();
+        return;
     }
 }
