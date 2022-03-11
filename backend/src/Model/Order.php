@@ -113,11 +113,11 @@ class Order {
     */
     public static function create($arr) {
         $order = new Order();
-        ($arr['id']) ? $order->setId($arr['id']) : null; 
-        ($arr['name']) ? $order->setOrderId($arr['orderId']) : null; 
-        ($arr['key_mais']) ? $order->setStoreId($arr['storeId']) : null; 
-        ($arr['key_primary']) ? $order->setIntegrated($arr['integrated']) : null; 
-        ($arr['token_primary']) ? $order->setCreatedAt($arr['createdAt']) : null; 
+        (isset($arr['id'])) ? $order->setId($arr['id']) : null; 
+        (isset($arr['orderId'])) ? $order->setOrderId($arr['orderId']) : null; 
+        (isset($arr['storeId'])) ? $order->setStoreId($arr['storeId']) : null; 
+        (isset($arr['integrated'])) ? $order->setIntegrated($arr['integrated']) : null; 
+        (isset($arr['createdAt'])) ? $order->setCreatedAt($arr['createdAt']) : null; 
         return $order;
     }
 
