@@ -59,6 +59,9 @@ class IntegrationController {
         }
     }
 
+    /**
+     * Run the Loja Integrada integration workflow
+     */
     private function integrateLojaIntegrada($shop) {
         //Check if the shop has keys
         if (!$shop->getCustomerKey() || !$shop->getCustomerToken()) {
@@ -106,6 +109,9 @@ class IntegrationController {
         return;
     }
 
+    /**
+     * Run the Convertize integration workflow
+     */
     private function integrateConvertize($shop) {
         if (!$shop->getCustomerToken()) {
             $log = new SgpLog();
@@ -158,6 +164,9 @@ class IntegrationController {
         }
     }
 
+    /**
+     * Run the VTEX integration workflow
+     */
     private function integrateVtex($shop) { 
         if ($shop->getAccount() === null || $shop->getCustomerKey() === null || $shop->getCustomerToken() === null) {
             $log = new SgpLog();
