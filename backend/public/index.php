@@ -10,6 +10,10 @@ use Maisenvios\Middleware\Repository\ShopRepository;
 
 $is_dev = true;
 
+/**
+ * Print and stop execution
+ * @param Array|Boolean $to_print 
+ */
 function debug($to_print = false, $show_details = false) {
     global $is_dev;
 
@@ -32,6 +36,7 @@ function debug($to_print = false, $show_details = false) {
     }
 }
 
+//Runs the feed process to record the VTEX Orders
 if (isset($_GET['shop_id']) && !is_null($_GET['shop_id']) && isset($_GET['method']) && !is_null($_GET['method']) && strcmp($_GET['method'], 'vtex-order-hook') === 0) {
     if (isset($_GET['shop_id']) && !is_null($_GET['shop_id'])) {        
         
@@ -46,8 +51,10 @@ if (isset($_GET['shop_id']) && !is_null($_GET['shop_id']) && isset($_GET['method
             (new VtexController($shop))->processFeed();
         }
     }
+// Run the integration to a specific shop
 } else if(isset($_GET['shop_id']) && !is_null($_GET['shop_id'])){
     (new IntegrationController())->run($_GET['shop_id']);
+// Run the standard workflow 
 } else {
     (new IntegrationController())->run();
 }
