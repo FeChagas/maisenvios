@@ -122,10 +122,10 @@ class Order {
     }
 
     public function createFromVtexFeed($order, $storeId) {
-        $order = new Order();
-        $order->setOrderId($order->orderId);
-        $order->setStoreId($storeId);
-        $order->setIntegrated(0);
-        return $order;
+        $obj = new Order();
+        $obj->setOrderId($order->orderId);
+        $obj->setStoreId($storeId);
+        $obj->setIntegrated(0);
+        return $obj;
     }
 }

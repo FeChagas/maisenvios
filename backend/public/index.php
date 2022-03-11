@@ -43,7 +43,7 @@ if (isset($_GET['shop_id']) && !is_null($_GET['shop_id']) && strcmp($_GET['metho
 
         $shops = (new ShopRepository())->findOneBy(['id' => $_GET['shop_id']]);
         foreach ($shops as $shop) {
-            (new VtexController($shop))->processFeed($_POST);
+            (new VtexController($shop))->processFeed();
         }
     }
 } else {
