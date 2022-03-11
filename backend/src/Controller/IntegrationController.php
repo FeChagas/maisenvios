@@ -183,6 +183,9 @@ class IntegrationController {
                                 $sgpObj = SgpPrePost::createFromVtex($fullOrder, $shipping);
                                 $json = SgpPrePost::generatePayload([$sgpObj]);
                                 $result = $sgpClient->createPrePost($json);
+                                if ($result->retorno->status_processamento == 1) {
+                                    $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 1]);
+                                }
                                 $log = SgpLog::createFromSgpResponse($shop->getId(), $order->getOrderId(), $result);
                                 $this->sgpLogRepo->create($log);
                             }

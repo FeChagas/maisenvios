@@ -100,4 +100,31 @@ class BaseRepository {
         $query = "INSERT INTO `{$this->tablename}` ({$columns}) VALUES ({$values})";
         return ($this->mysql->query($query) === TRUE) ? true : false;
     }
+
+    public function update(Array $where, Array $payload) {
+        if (empty($where)) {
+            throw new \Exception("Can't update without a where clause", 1);
+        }
+        if (empty($payload)) {
+            throw new \Exception("Can't update without a set clause", 1);
+        }
+
+        $setString = '';
+        $whereString = '1 = 1';
+
+        foreach ($where as $key => $value) {
+            $whereString .= " AND `{$key}` = '{$value}'";
+        }
+        $lastSetArg = count($payload);
+        $countInterations = 1;
+        foreach ($payload as $key => $value) {
+            $setString .= "`{$key}` = '{$value}'";
+            if ($lastSetArg > $countInterations) {
+                $setString .= ',';
+            }
+        }
+
+        $query = "UPDATE `{$this->tablename}` SET {$setString} WHERE {$whereString}";
+        return ($this->mysql->query($query) === TRUE) ? true : false;
+    }
 }

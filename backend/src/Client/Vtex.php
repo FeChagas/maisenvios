@@ -37,8 +37,8 @@ class Vtex {
         return $this->connection->response;
     }
 
-    public function getFeeds() {
-        $this->connection->get("{$this->endpoint}/orders/feed/config");
+    public function getFeed() {
+        $this->connection->get("{$this->endpoint}/orders/feed");
         return $this->connection->response;
     }
 

@@ -40,13 +40,19 @@ class VtexController {
         $this->orderRepo = new OrderRepository();
     }
 
-    public function processFeed(array $orders) {
+    public function processFeed() {
         $toCommit = [];
+        $orders = $this->vtexClient->getFeed();
         foreach ($orders as $order) {
             $orderObj = (new Order())->createFromVtexFeed($order, $this->shop->getId());
             $created = $this->orderRepo->create($orderObj);
             if ($created) {
                 array_push($toCommit, $order->handle);
+                $log = new SgpLog();
+                $log->setShopId( $this->shop->getId() );
+                $log->setOrderId($order->orderId);
+                $log->setStatus("Pedido recebido do Feed");
+                $this->sgpLogRepo->create($log);
             } else {
                 $log = new SgpLog();
                 $log->setShopId( $this->shop->getId() );
@@ -57,7 +63,12 @@ class VtexController {
         }
 
         if (! empty($toCommit)) {
-            $this->vtexClient->commit($toCommit);
+            $result = $this->vtexClient->commit($toCommit);
+            $log = new SgpLog();
+            $log->setShopId( $this->shop->getId() );
+            $log->setStatus("Itens do Feed commitados");
+            $log->setObjetos(json_encode($result));
+            $this->sgpLogRepo->create($log);
         }
     }
 }
