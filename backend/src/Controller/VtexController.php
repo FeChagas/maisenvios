@@ -44,21 +44,26 @@ class VtexController {
         $toCommit = [];
         $orders = $this->vtexClient->getFeed();
         foreach ($orders as $order) {
-            $orderObj = (new Order())->createFromVtexFeed($order, $this->shop->getId());
-            $created = $this->orderRepo->create($orderObj);
-            if ($created) {
-                array_push($toCommit, $order->handle);
-                $log = new SgpLog();
-                $log->setShopId( $this->shop->getId() );
-                $log->setOrderId($order->orderId);
-                $log->setStatus("Pedido recebido do Feed");
-                $this->sgpLogRepo->create($log);
+            $orderInDB = $this->orderRepo->findOneBy(['orderId' => $order->orderId]);
+            if (!$orderInDB) {
+                $orderObj = (new Order())->createFromVtexFeed($order, $this->shop->getId());
+                $created = $this->orderRepo->create($orderObj);
+                if ($created) {
+                    array_push($toCommit, $order->handle);
+                    $log = new SgpLog();
+                    $log->setShopId( $this->shop->getId() );
+                    $log->setOrderId($order->orderId);
+                    $log->setStatus("Pedido recebido do Feed");
+                    $this->sgpLogRepo->create($log);
+                } else {
+                    $log = new SgpLog();
+                    $log->setShopId( $this->shop->getId() );
+                    $log->setOrderId($order->orderId);
+                    $log->setStatus("Falha ao gravar o pedido no banco de dados");
+                    $this->sgpLogRepo->create($log);
+                }
             } else {
-                $log = new SgpLog();
-                $log->setShopId( $this->shop->getId() );
-                $log->setOrderId($order->orderId);
-                $log->setStatus("Falha ao gravar o pedido no banco de dados");
-                $this->sgpLogRepo->create($log);
+                array_push($toCommit, $order->handle);
             }
         }
 
