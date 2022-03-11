@@ -176,30 +176,30 @@ class IntegrationController {
                 foreach ($orders as $order) {
                     $logHistory = $this->sgpLogRepo->findOneBy(['shopId' => $shop->getId(), 'orderId' => $order->getOrderId(), 'status_processamento' => 1]);
                     if (!$logHistory) {
+                        $isInvalidShipping = true;
                         foreach ($shippings as $shipping) {
-                            $isInvalidShipping = true;
                             $fullOrder = $vtexClient->getOrder($order->getOrderId());
                             if (strcmp($fullOrder->shippingData->logisticsInfo[0]->deliveryCompany, $shipping->getName()) === 0) {
                                 $isInvalidShipping = false;
                                 $sgpObj = SgpPrePost::createFromVtex($fullOrder, $shipping);
                                 $json = SgpPrePost::generatePayload([$sgpObj]);
                                 $result = $sgpClient->createPrePost($json);
+                                $log = SgpLog::createFromSgpResponse($shop->getId(), $order->getOrderId(), $result);
+                                $this->sgpLogRepo->create($log);
                                 if ($result->retorno->status_processamento == 1) {
                                     $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 1]);
                                 }
-                                $log = SgpLog::createFromSgpResponse($shop->getId(), $order->getOrderId(), $result);
-                                $this->sgpLogRepo->create($log);
-                            }
-                            
-                            if ($isInvalidShipping) {
-                                $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 2]);
-                                $log = new SgpLog();
-                                $log->setOrderId($order->getOrderId());
-                                $log->setShopId( $shop->getId() );
-                                $log->setStatus("A transportadora inválida.");
-                                $log->setObjetos(json_encode($fullOrder));
-                                $this->sgpLogRepo->create($log);
-                            }
+                            }                            
+                        }
+                        if ($isInvalidShipping) {
+                            $isInvalidShipping = true;
+                            $log = new SgpLog();
+                            $log->setOrderId($order->getOrderId());
+                            $log->setShopId( $shop->getId() );
+                            $log->setStatus("Transportadora inválida.");
+                            $log->setObjetos(json_encode($fullOrder));
+                            $this->sgpLogRepo->create($log);
+                            $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 2]);
                         }
                     }
                 }
