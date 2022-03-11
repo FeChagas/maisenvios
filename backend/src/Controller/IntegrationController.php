@@ -29,14 +29,13 @@ class IntegrationController {
         $this->orderRepo = new OrderRepository();
     }
 
-    public function run() {
+    public function run(int $shopId = 0) {
         //before each run, we warm up the logs just in case
         LogController::warmUp();
         //get the next shop to run
         //this search grabs the log and check the most recent log of each shop
         //and get the older from this group
-        $shops = $this->shopRepo->findNextToRun();
-        // $shops = $this->shopRepo->findOneBy(['id' => 12]);
+        $shops = ($shopId === 0) ? $this->shopRepo->findNextToRun() : $this->shopRepo->findOneBy(['id' => $shopId]);
         foreach ($shops as $shop) {
             switch ($shop->getEcommerce()) {
                 case 'lojaintegrada':
@@ -159,7 +158,7 @@ class IntegrationController {
         }
     }
 
-    private function integrateVtex($shop) {        
+    private function integrateVtex($shop) { 
         if ($shop->getAccount() === null || $shop->getCustomerKey() === null || $shop->getCustomerToken() === null) {
             $log = new SgpLog();
             $log->setShopId( $shop->getId() );
@@ -172,7 +171,7 @@ class IntegrationController {
             $sgpClient = new Sgp($shop->getSysKey());
             $shippings = $this->shippingRepo->findAll(['idShop' => $shop->getId(), 'active' => 1]);
             $orderQuery = ['storeId' => $shop->getId(), 'integrated' => 0];
-            $orders = $this->orderRepo->findAll($orderQuery);
+            $orders = $this->orderRepo->findAll($orderQuery);            
             if (count($orders) > 0) {
                 foreach ($orders as $order) {
                     $logHistory = $this->sgpLogRepo->findOneBy(['shopId' => $shop->getId(), 'orderId' => $order->getOrderId(), 'status_processamento' => 1]);
@@ -191,8 +190,8 @@ class IntegrationController {
                                 $log = SgpLog::createFromSgpResponse($shop->getId(), $order->getOrderId(), $result);
                                 $this->sgpLogRepo->create($log);
                             }
-
-                            if (!$isInvalidShipping) {
+                            
+                            if ($isInvalidShipping) {
                                 $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 2]);
                                 $log = new SgpLog();
                                 $log->setOrderId($order->getOrderId());

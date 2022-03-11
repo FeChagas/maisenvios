@@ -32,7 +32,7 @@ function debug($to_print = false, $show_details = false) {
     }
 }
 
-if (isset($_GET['shop_id']) && !is_null($_GET['shop_id']) && strcmp($_GET['method'], 'vtex-order-hook') === 0) {
+if (isset($_GET['shop_id']) && !is_null($_GET['shop_id']) && isset($_GET['method']) && !is_null($_GET['method']) && strcmp($_GET['method'], 'vtex-order-hook') === 0) {
     if (isset($_GET['shop_id']) && !is_null($_GET['shop_id'])) {        
         
         $log = new SgpLog();
@@ -46,6 +46,8 @@ if (isset($_GET['shop_id']) && !is_null($_GET['shop_id']) && strcmp($_GET['metho
             (new VtexController($shop))->processFeed();
         }
     }
+} else if(isset($_GET['shop_id']) && !is_null($_GET['shop_id'])){
+    (new IntegrationController())->run($_GET['shop_id']);
 } else {
     (new IntegrationController())->run();
 }
