@@ -3,18 +3,18 @@
   include '../connection/mysql.php'; 
 ?>
 <?php 
-  $retorno = [];
-  $busca = 'SELECT id, name, ecommerce, account, active FROM `shop`';
-  $result = $link->query($busca);
-  if ($result->num_rows > 0) {
-    while($row = $result->fetch_assoc()) {
-      array_push($retorno, array(
-        "id" => $row['id'],
-        "name" => $row['name'],
-        "ecommerce" => $row['ecommerce'],
-        "account" => $row['account'],
-        "active" => $row['active']
-      ));
-    }
+
+$where = 'WHERE 1 = 1';
+if ($_GET && isset($_GET['id']) && !is_null($_GET['id'])) {
+  $where .= " AND id = {$_GET['id']}";
+}
+
+$retorno = [];
+$busca = "SELECT * FROM `shop` {$where}";
+$result = $link->query($busca);
+if ($result->num_rows > 0) {
+  while($row = $result->fetch_assoc()) {
+    array_push($retorno, $row);
   }
-  echo json_encode($retorno);
+}
+echo json_encode($retorno);
