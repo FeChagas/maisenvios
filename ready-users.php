@@ -32,7 +32,7 @@ License: You must have a valid license purchased only from themeforest(the above
                       Mais envios
                     </h2>
                     <div class="w-full sm:w-auto flex mt-4 sm:mt-0">
-                        <a href="/painel/new-user" class="btn btn-primary shadow-md mr-2">Novo usuário</a>
+                        <a href="<?php echo $_ENV['HOST_URL']; ?>/new-user.php" class="btn btn-primary shadow-md mr-2">Novo usuário</a>
                     </div>
                 </div>
                 <!-- BEGIN: HTML Table Data -->
@@ -43,7 +43,7 @@ License: You must have a valid license purchased only from themeforest(the above
         </div>
         <!-- BEGIN: JS Assets-->
         <?php include 'includes/scripts.php'; ?>
-        <script src="dist/routes/ready-user.js"></script>
+        <script src="dist/routes/ready-user.js?<?php echo $_ENV['HOST_URL']; ?>"></script>
         <!-- END: JS Assets-->
     </body>
 </html>
