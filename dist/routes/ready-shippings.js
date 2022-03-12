@@ -1,3 +1,9 @@
+var scripts = document.getElementsByTagName("script");
+var index = scripts.length - 1;
+var myScript = scripts[index];
+// myScript now contains our script object
+const HOST_URL = myScript.src.replace(/^[^\?]+\??/, "");
+
 var query = location.search.slice(1);
 var partes = query.split("&");
 var data = {};
@@ -7,7 +13,7 @@ partes.forEach(function (parte) {
   var valor = chaveValor[1];
   data[chave] = valor;
 });
-actionUrl = "/painel/php/shipping/ready";
+actionUrl = HOST_URL + "/php/shipping/ready.php";
 idShop = data["idShop"];
 $.ajax({
   type: "GET",

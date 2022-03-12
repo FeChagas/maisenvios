@@ -18,7 +18,7 @@ $.ajax({
             <td>${element.ecommerce}</td>
             <td>${element.active}</td>
             <td>
-              <a class="btn btn-primary" href="/painel/ready-shippings?idShop=${element.id}">
+              <a class="btn btn-primary" href="${HOST_URL}/ready-shippings.php?idShop=${element.id}">
                 <div class="side-menu__icon"> <i data-feather="target"></i></div>
                 Listar transportadoras
               <a/>
