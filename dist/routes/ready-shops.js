@@ -28,10 +28,14 @@ $.ajax({
               <div class="side-menu__icon"> <i data-feather="target"></i></div>
               Editar
             <a/>
-              <a class="btn btn-primary" href="${HOST_URL}/ready-shippings.php?idShop=${element.id}">
-                <div class="side-menu__icon"> <i data-feather="target"></i></div>
-                Listar transportadoras
-              <a/>
+            <a class="btn btn-primary" href="${HOST_URL}/ready-shippings.php?idShop=${element.id}">
+              <div class="side-menu__icon"> <i data-feather="target"></i></div>
+              Listar transportadoras
+            <a/>
+            <a class="btn btn-primary" href="${HOST_URL}/config-integration.php?idShop=${element.id}">
+              <div class="side-menu__icon"> <i data-feather="target"></i></div>
+              Configurar integração
+            <a/>
             </td>
           </tr>
         `;
