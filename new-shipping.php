@@ -43,7 +43,7 @@ License: You must have a valid license purchased only from themeforest(the above
         </div>
         <!-- BEGIN: JS Assets-->
         <?php include 'includes/scripts.php'; ?>
-        <script src="dist/routes/new-shipping.js"></script>
+        <script src="dist/routes/new-shipping.js?<?php echo $_ENV['HOST_URL']; ?>"></script>
         <!-- END: JS Assets-->
     </body>
 </html>

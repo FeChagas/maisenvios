@@ -5,15 +5,16 @@
 <?php 
 
 $where = 'WHERE 1 = 1';
-if ($_GET && isset($_GET['id']) && !is_null($_GET['id'])) {
-  $where .= " AND id = {$_GET['id']}";
+if ($_GET && isset($_GET['shop_id']) && !is_null($_GET['shop_id'])) {
+  $where .= " AND shopId = {$_GET['shop_id']}";
 }
 
 $retorno = [];
-$busca = "SELECT * FROM `shop` {$where}";
+$busca = "SELECT * FROM `shop_meta` {$where}";
 $result = $link->query($busca);
 if ($result->num_rows > 0) {
   while($row = $result->fetch_assoc()) {
+    $row['value'] = unserialize($row['value']);
     array_push($retorno, $row);
   }
 }

@@ -17,11 +17,20 @@ class Vtex {
         $this->connection->setHeader('X-VTEX-API-AppToken', $token);
     }
 
+    /**
+     * ORDER
+     */
     public function getOrder($args) {
         $this->connection->get("{$this->endpoint}/oms/pvt/orders/{$args}");
         return $this->connection->response;
     }
+    /**
+     * END OF ORDER
+     */
 
+    /**
+     * FEED AND HOOKS
+     */
     public function createHook($args) {        
         $this->connection->post("{$this->endpoint}/orders/hook/config", $args);
         return $this->connection->response;
@@ -46,5 +55,20 @@ class Vtex {
         $this->connection->post("{$this->endpoint}/orders/feed", $args);
         return $this->connection->response;
     }
+    /**
+     * END OF FEED AND HOOKS
+     */
+
+     /**
+      * TRACKING
+      */
+
+    public function updateOrderTracking(int $orderId, string $invoiceNumber, array $args) {
+        $this->connection->put("{$this->endpoint}/oms/pvt/orders/{$orderId}/invoice/{$invoiceNumber}/tracking", $args);
+        return $this->connection->response;
+    }
+    /**
+     * END OF TRACKING
+     */
 }
 ?>

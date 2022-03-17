@@ -7,7 +7,7 @@
           </h2>
       </div>
       <div class="p-5">
-        <form action="/painel/php/users/new.php" id="new-user">
+        <form action="/php/users/new.php" id="new-user">
           <div class="mt-2">
               <label for="regular-form-1" class="form-label">Nome</label>
               <input id="regular-form-1" type="text" class="form-control" placeholder="Nome" name="name">

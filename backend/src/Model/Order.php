@@ -4,6 +4,8 @@ namespace Maisenvios\Middleware\Model;
 class Order {
     private $id;
     private $orderId;
+    private $invoiceNumber;
+    private $tracking;
     private $storeId;
     private $integrated;
     private $createdAt;
@@ -44,6 +46,46 @@ class Order {
     public function setOrderId($orderId)
     {
         $this->orderId = $orderId;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of tracking
+     */ 
+    public function getTracking()
+    {
+        return $this->tracking;
+    }
+
+    /**
+     * Set the value of tracking
+     *
+     * @return  self
+     */ 
+    public function setTracking($tracking)
+    {
+        $this->tracking = $tracking;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of invoiceNumber
+     */ 
+    public function getInvoiceNumber()
+    {
+        return $this->invoiceNumber;
+    }
+
+    /**
+     * Set the value of invoiceNumber
+     *
+     * @return  self
+     */ 
+    public function setInvoiceNumber($invoiceNumber)
+    {
+        $this->invoiceNumber = $invoiceNumber;
 
         return $this;
     }
@@ -115,6 +157,8 @@ class Order {
         $order = new Order();
         (isset($arr['id'])) ? $order->setId($arr['id']) : null; 
         (isset($arr['orderId'])) ? $order->setOrderId($arr['orderId']) : null; 
+        (isset($arr['invoiceNumber'])) ? $order->setInvoiceNumber($arr['invoiceNumber']) : null; 
+        (isset($arr['tracking'])) ? $order->setTracking($arr['tracking']) : null; 
         (isset($arr['storeId'])) ? $order->setStoreId($arr['storeId']) : null; 
         (isset($arr['integrated'])) ? $order->setIntegrated($arr['integrated']) : null; 
         (isset($arr['createdAt'])) ? $order->setCreatedAt($arr['createdAt']) : null; 

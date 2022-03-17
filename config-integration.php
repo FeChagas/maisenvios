@@ -36,14 +36,14 @@ License: You must have a valid license purchased only from themeforest(the above
                     </div> -->
                 </div>
                 <!-- BEGIN: HTML Table Data -->
-                <?php include 'middle/new-user.php'; ?>
+                <?php include 'middle/config-integration.php'; ?>
                 <!-- END: HTML Table Data -->
             </div>
             <!-- END: Content -->
         </div>
         <!-- BEGIN: JS Assets-->
         <?php include 'includes/scripts.php'; ?>
-        <script src="dist/routes/new-user.js?<?php echo $_ENV['HOST_URL']; ?>"></script>
+        <script src="dist/routes/config-integration.js?<?php echo $_ENV['HOST_URL']; ?>"></script>
         <!-- END: JS Assets-->
     </body>
 </html>

@@ -7,7 +7,7 @@
           </h2>
       </div>
       <div class="p-5">
-        <form action="/painel/php/shop/new.php" id="new-shop">
+        <form action="/php/shop/new.php" id="new-shop">
           <div class="mt-2">
               <label for="regular-form-1" class="form-label">Nome</label>
               <input id="regular-form-1" type="text" class="form-control" placeholder="Nome" name="name">
@@ -44,7 +44,7 @@
               <br />
           </div>
           <div class="mt-5">
-              <button class="btn btn-primary">Salvar</button>
+              <button class="btn btn-primary" type="submit">Salvar</button>
           </div>
         </form>
       </div>
