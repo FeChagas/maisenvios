@@ -51,24 +51,21 @@ class VtexService {
         $this->vtexClient->createFeed($feedArgs);
 
         $url = "https://maisenviosintegracao.com.br/painel/backend/public/index.php?method=vtex-order-hook&shop_id={$this->shop->getId()}";
-        $hook = $this->vtexClient->getHooks();
-        if (!isset($hook->hook) || strcmp($hook->hook->url, $url) !== 0) {
-            $hookArgs = [
-                "filter" => [
-                    "type" => "FromWorkflow",
-                    "status" => $order_status
-                ],
-                "hook" => [
-                    "url" => $url                
-                ]
-            ];
-            $this->vtexClient->createHook($hookArgs);
-            $log = new SgpLog();
-            $log->setShopId( $this->shop->getId() );
-            $log->setStatus("Hook criado.");
-            $log->setObjetos(json_encode($hookArgs));
-            $this->sgpLogRepo->create($log);
-        }
+        $hookArgs = [
+            "filter" => [
+                "type" => "FromWorkflow",
+                "status" => $order_status
+            ],
+            "hook" => [
+                "url" => $url                
+            ]
+        ];
+        $this->vtexClient->createHook($hookArgs);
+        $log = new SgpLog();
+        $log->setShopId( $this->shop->getId() );
+        $log->setStatus("Hook criado.");
+        $log->setObjetos(json_encode($hookArgs));
+        $this->sgpLogRepo->create($log);
         return;
     }
 }
