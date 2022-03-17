@@ -36,11 +36,11 @@ class VtexService {
         $this->shop = $shop;
     }
 
-    public function validateOrderFeedAndHook() {
+    public function validateOrderFeedAndHook($order_status = ['invoiced']) {
         $feedArgs = [
             "filter" => [
                 "type" => "FromWorkflow",
-                "status" => ["invoiced"],
+                "status" => $order_status,
                 "disableSingleFire" => false
             ],
             "queue" => [
@@ -56,7 +56,7 @@ class VtexService {
             $hookArgs = [
                 "filter" => [
                     "type" => "FromWorkflow",
-                    "status" => ["invoiced"]
+                    "status" => $order_status
                 ],
                 "hook" => [
                     "url" => $url                

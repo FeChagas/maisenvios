@@ -5,6 +5,7 @@ use Maisenvios\Middleware\Model\SgpLog;
 use Maisenvios\Middleware\Model\SgpPrePost;
 use Maisenvios\Middleware\Repository\OrderRepository;
 use Maisenvios\Middleware\Repository\ShopRepository;
+use Maisenvios\Middleware\Repository\ShopMetaRepository;
 use Maisenvios\Middleware\Repository\ShippingRepository;
 use Maisenvios\Middleware\Repository\SgpLogRepository;
 use Maisenvios\Middleware\Client\Convertize;
@@ -17,6 +18,7 @@ use Maisenvios\Middleware\Service\VtexService;
 class IntegrationController {
 
     private $shopRepo;
+    private $shopMetaRepo;
     private $shippingRepo;
     private $sgpLogRepo;
     private $orderRepo;
@@ -24,6 +26,7 @@ class IntegrationController {
     public function __construct()
     {
         $this->shopRepo = new ShopRepository();
+        $this->shopMetaRepo = new ShopMetaRepository();
         $this->shippingRepo = new ShippingRepository();
         $this->sgpLogRepo = new SgpLogRepository();
         $this->orderRepo = new OrderRepository();
@@ -36,7 +39,7 @@ class IntegrationController {
         //this search grabs the log and check the most recent log of each shop
         //and get the older from this group
         $shops = ($shopId === 0) ? $this->shopRepo->findNextToRun() : $this->shopRepo->findOneBy(['id' => $shopId]);
-        foreach ($shops as $shop) {
+        foreach ($shops as $shop) {            
             switch ($shop->getEcommerce()) {
                 case 'lojaintegrada':
                     $this->integrateLojaIntegrada($shop);
@@ -186,50 +189,111 @@ class IntegrationController {
             $this->sgpLogRepo->create($log);
             throw new \Exception("Shop must have account, key and token", 1);            
         } else {
-            (new VtexService($shop))->validateOrderFeedAndHook();
-            $vtexClient = new Vtex($shop->getAccount(), $shop->getCustomerKey(), $shop->getCustomerToken());
-            $sgpClient = new Sgp($shop->getSysKey());
-            $shippings = $this->shippingRepo->findAll(['idShop' => $shop->getId(), 'active' => 1]);
-            $orderQuery = ['storeId' => $shop->getId(), 'integrated' => 0];
-            $orders = $this->orderRepo->findAll($orderQuery);            
-            if (count($orders) > 0) {
-                foreach ($orders as $order) {
-                    $logHistory = $this->sgpLogRepo->findOneBy(['shopId' => $shop->getId(), 'orderId' => $order->getOrderId(), 'status_processamento' => 1]);
-                    if (!$logHistory) {
-                        $isInvalidShipping = true;
-                        foreach ($shippings as $shipping) {
-                            $fullOrder = $vtexClient->getOrder($order->getOrderId());
-                            if (strcmp($fullOrder->shippingData->logisticsInfo[0]->deliveryCompany, $shipping->getName()) === 0) {
-                                $isInvalidShipping = false;
-                                $sgpObj = SgpPrePost::createFromVtex($fullOrder, $shipping);
-                                $json = SgpPrePost::generatePayload([$sgpObj]);
-                                $result = $sgpClient->createPrePost($json);
-                                $log = SgpLog::createFromSgpResponse($shop->getId(), $order->getOrderId(), $result);
-                                $this->sgpLogRepo->create($log);
-                                if ($result->retorno->status_processamento == 1) {
-                                    $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 1]);
-                                }
-                            }                            
-                        }
-                        if ($isInvalidShipping) {
+
+            
+            //Grabs the shop meta
+            $shopMetas = $this->shopMetaRepo->findAll(['shopId' => $shop->getId()]);
+            $steps = [];
+            $order_status = [];
+            foreach ($shopMetas as $key => $meta) {
+                switch ($meta->getName()) {
+                    case 'vtex_integration_step':
+                        $steps = maybe_unserialize( $meta->getValue() );
+                        break;
+                        
+                        case 'vtex_order_status':
+                            $order_status = maybe_unserialize( $meta->getValue() );
+                            break;
+                    default:
+                    # code...
+                    break;
+                }
+            }
+            
+            if (in_array('vtex_order_feed', $steps)) {
+                (new VtexService($shop))->validateOrderFeedAndHook();                
+            }
+            
+            if (in_array('sgp_pre_post', $steps)) {
+                $orderQuery = ['storeId' => $shop->getId(), 'integrated' => 0];
+                $orders = $this->orderRepo->findAll($orderQuery);            
+                if (count($orders) > 0) {
+                    $vtexClient = new Vtex($shop->getAccount(), $shop->getCustomerKey(), $shop->getCustomerToken());
+                    $sgpClient = new Sgp($shop->getSysKey());
+                    $shippings = $this->shippingRepo->findAll(['idShop' => $shop->getId(), 'active' => 1]);
+                    foreach ($orders as $order) {
+                        $logHistory = $this->sgpLogRepo->findOneBy(['shopId' => $shop->getId(), 'orderId' => $order->getOrderId(), 'status_processamento' => 1]);
+                        if (!$logHistory) {
                             $isInvalidShipping = true;
-                            $log = new SgpLog();
-                            $log->setOrderId($order->getOrderId());
-                            $log->setShopId( $shop->getId() );
-                            $log->setStatus("Transportadora inválida.");
-                            $log->setObjetos(json_encode($fullOrder));
-                            $this->sgpLogRepo->create($log);
-                            $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 2]);
+                            foreach ($shippings as $shipping) {
+                                $fullOrder = $vtexClient->getOrder($order->getOrderId());
+                                if (strcmp($fullOrder->shippingData->logisticsInfo[0]->deliveryCompany, $shipping->getName()) === 0) {
+                                    $isInvalidShipping = false;
+                                    $sgpObj = SgpPrePost::createFromVtex($fullOrder, $shipping);
+                                    $json = SgpPrePost::generatePayload([$sgpObj]);
+                                    $result = $sgpClient->createPrePost($json);
+                                    if ($result->retorno->status_processamento == 1) {
+                                        $updateOrderArgs = [
+                                            'integrated' => 1,
+                                            'invoiceNumber' => isset($fullOrder->packageAttachment->packages[0]->invoiceNumber) ? $fullOrder->packageAttachment->packages[0]->invoiceNumber : null,
+                                            'tracking' => isset($result->retorno->objetos[0]->objeto) ? $result->retorno->objetos[0]->objeto : null
+                                        ];
+                                        $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
+                                        $log = SgpLog::createFromSgpResponse($shop->getId(), $order->getOrderId(), $result);
+                                        $this->sgpLogRepo->create($log);
+                                    }
+                                }                            
+                            }
+                            if ($isInvalidShipping) {
+                                $isInvalidShipping = true;
+                                $log = new SgpLog();
+                                $log->setOrderId($order->getOrderId());
+                                $log->setShopId( $shop->getId() );
+                                $log->setStatus("Transportadora inválida.");
+                                $log->setObjetos(json_encode($fullOrder));
+                                $this->sgpLogRepo->create($log);
+                                $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 2]);
+                            }
                         }
                     }
-                }
-            } else {
-                $log = new SgpLog();
-                $log->setShopId( $shop->getId() );
-                $log->setStatus( "nenhum pedido encontrado" );
-                $log->setObjetos( json_encode( $orderQuery ) );
-                $this->sgpLogRepo->create($log);
+                } else {
+                    $log = new SgpLog();
+                    $log->setShopId( $shop->getId() );
+                    $log->setStatus( "nenhum pedido encontrado" );
+                    $log->setObjetos( json_encode( $orderQuery ) );
+                    $this->sgpLogRepo->create($log);
+                }                
             }
+
+            if (in_array('vtex_tracking_update', $steps)) {
+                $orderQuery = ['storeId' => $shop->getId(), 'integrated' => 1];
+                $orders = $this->orderRepo->findAll($orderQuery);            
+                if (count($orders) > 0) {
+                    $vtexClient = new Vtex($shop->getAccount(), $shop->getCustomerKey(), $shop->getCustomerToken());
+                    foreach ($orders as $order) {
+                        if($order->getTracking() !== null && $order->getInvoiceNumber() !== null) {
+                            $args = [
+                                "orderId" => $order->getOrderId(),
+                                "invoiceNumber" => $order->getInvoiceNumber(),
+                                "isDelivered" => false,
+                                "events" => []
+                            ];
+                            $result = $vtexClient->updateOrderTracking( $order->getOrderId(), $order->getInvoiceNumber(), $args);
+                            if (isset($result->receipt)) {
+                                $updateOrderArgs = [
+                                    'integrated' => 'vtex_tracking_update',
+                                ];
+                                $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
+                                $log = new SgpLog();
+                                $log->setShopId( $shop->getId() );
+                                $log->setStatus( "Código de rastreio enviado" );
+                                $log->setObjetos( json_encode( $result ) );
+                                $this->sgpLogRepo->create($log);
+                            }
+                        }
+                    }
+                }  
+            }            
         }
 
         return;
