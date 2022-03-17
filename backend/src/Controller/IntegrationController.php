@@ -201,9 +201,9 @@ class IntegrationController {
                         $steps = maybe_unserialize( $meta->getValue() );
                         break;
                         
-                        case 'vtex_order_status':
-                            $order_status = maybe_unserialize( $meta->getValue() );
-                            break;
+                    case 'vtex_order_status':
+                        $order_status = maybe_unserialize( $meta->getValue() );
+                        break;
                     default:
                     # code...
                     break;
@@ -211,7 +211,7 @@ class IntegrationController {
             }
             
             if (in_array('vtex_order_feed', $steps)) {
-                (new VtexService($shop))->validateOrderFeedAndHook();                
+                (new VtexService($shop))->validateOrderFeedAndHook($order_status);                
             }
             
             if (in_array('sgp_pre_post', $steps)) {
