@@ -15,6 +15,11 @@ class Convertize {
         $this->endpoint = "https://api.myconvertize.com.br/{$account}/api/1.0";
     }
 
+    public function getOrder($orderId) {
+        $this->connection->get("{$this->endpoint}/orders/{$orderId}/");
+        return $this->connection->response;
+    }
+
     public function listOrders(Array $args = []) {
         $this->connection->get("{$this->endpoint}/orders/", $args);
         return $this->connection->response;

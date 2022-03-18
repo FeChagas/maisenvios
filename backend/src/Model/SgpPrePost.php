@@ -436,7 +436,8 @@ class SgpPrePost {
         $thisObj->setComprimento( 11 );
         $thisObj->setLargura( 2 );
         $thisObj->setAltura( 16 );
-        $thisObj->setServico_correios( $shipping->getCorreios() );
+        $thisObj->setServico_correios( $shipping );
+        $thisObj->setNota_fiscal($payload->invoices[0]->id);
 
         return $thisObj;
     }
@@ -462,6 +463,7 @@ class SgpPrePost {
             $json['comprimento'] = $sgpPrePost->getComprimento();
             $json['largura'] = $sgpPrePost->getLargura();
             $json['altura'] = $sgpPrePost->getAltura();
+            $json['nota_fiscal'] = $sgpPrePost->getNota_fiscal();
             array_push($objetos['objetos'], $json);
         }
         return json_encode($objetos);
