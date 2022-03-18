@@ -222,38 +222,35 @@ class IntegrationController {
                     $sgpClient = new Sgp($shop->getSysKey());
                     $shippings = $this->shippingRepo->findAll(['idShop' => $shop->getId(), 'active' => 1]);
                     foreach ($orders as $order) {
-                        $logHistory = $this->sgpLogRepo->findOneBy(['shopId' => $shop->getId(), 'orderId' => $order->getOrderId(), 'status_processamento' => 1]);
-                        if (!$logHistory) {
+                        $isInvalidShipping = true;
+                        foreach ($shippings as $shipping) {
+                            $fullOrder = $vtexClient->getOrder($order->getOrderId());
+                            if (strcmp($fullOrder->shippingData->logisticsInfo[0]->deliveryCompany, $shipping->getName()) === 0) {
+                                $isInvalidShipping = false;
+                                $sgpObj = SgpPrePost::createFromVtex($fullOrder, $shipping);
+                                $json = SgpPrePost::generatePayload([$sgpObj]);
+                                $result = $sgpClient->createPrePost($json);
+                                if ($result->retorno->status_processamento == 1) {
+                                    $updateOrderArgs = [
+                                        'integrated' => 1,
+                                        'invoiceNumber' => isset($fullOrder->packageAttachment->packages[0]->invoiceNumber) ? $fullOrder->packageAttachment->packages[0]->invoiceNumber : null,
+                                        'tracking' => isset($result->retorno->objetos[0]->objeto) ? $result->retorno->objetos[0]->objeto : null
+                                    ];
+                                    $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
+                                    $log = SgpLog::createFromSgpResponse($shop->getId(), $order->getOrderId(), $result);
+                                    $this->sgpLogRepo->create($log);
+                                }
+                            }                            
+                        }
+                        if ($isInvalidShipping) {
                             $isInvalidShipping = true;
-                            foreach ($shippings as $shipping) {
-                                $fullOrder = $vtexClient->getOrder($order->getOrderId());
-                                if (strcmp($fullOrder->shippingData->logisticsInfo[0]->deliveryCompany, $shipping->getName()) === 0) {
-                                    $isInvalidShipping = false;
-                                    $sgpObj = SgpPrePost::createFromVtex($fullOrder, $shipping);
-                                    $json = SgpPrePost::generatePayload([$sgpObj]);
-                                    $result = $sgpClient->createPrePost($json);
-                                    if ($result->retorno->status_processamento == 1) {
-                                        $updateOrderArgs = [
-                                            'integrated' => 1,
-                                            'invoiceNumber' => isset($fullOrder->packageAttachment->packages[0]->invoiceNumber) ? $fullOrder->packageAttachment->packages[0]->invoiceNumber : null,
-                                            'tracking' => isset($result->retorno->objetos[0]->objeto) ? $result->retorno->objetos[0]->objeto : null
-                                        ];
-                                        $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
-                                        $log = SgpLog::createFromSgpResponse($shop->getId(), $order->getOrderId(), $result);
-                                        $this->sgpLogRepo->create($log);
-                                    }
-                                }                            
-                            }
-                            if ($isInvalidShipping) {
-                                $isInvalidShipping = true;
-                                $log = new SgpLog();
-                                $log->setOrderId($order->getOrderId());
-                                $log->setShopId( $shop->getId() );
-                                $log->setStatus("Transportadora inválida.");
-                                $log->setObjetos(json_encode($fullOrder));
-                                $this->sgpLogRepo->create($log);
-                                $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 2]);
-                            }
+                            $log = new SgpLog();
+                            $log->setOrderId($order->getOrderId());
+                            $log->setShopId( $shop->getId() );
+                            $log->setStatus("Transportadora inválida.");
+                            $log->setObjetos(json_encode($fullOrder));
+                            $this->sgpLogRepo->create($log);
+                            $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 2]);
                         }
                     }
                 } else {
