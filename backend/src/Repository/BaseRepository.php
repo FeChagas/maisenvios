@@ -122,6 +122,7 @@ class BaseRepository {
             if ($lastSetArg > $countInterations) {
                 $setString .= ',';
             }
+            $countInterations++;
         }
 
         $query = "UPDATE `{$this->tablename}` SET {$setString} WHERE {$whereString}";

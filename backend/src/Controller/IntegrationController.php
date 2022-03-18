@@ -158,8 +158,8 @@ class IntegrationController {
                         "status" => "ETP"
                     ];
                     //send the tracking code back and update the order status
-                    $convertizeClient->setOrderTracker($order->id, $payloadTracker);
-                    $convertizeClient->setOrderStatus($order->id, $payloadStatus);
+                    $convertizeClient->setOrderTracker($order->getOrderId(), $payloadTracker);
+                    $convertizeClient->setOrderStatus($order->getOrderId(), $payloadStatus);
                     $this->orderRepo->update( ['orderId' => $order->getOrderId()] , ['integrated' => 1, 'tracking' => $objeto->objeto] );
                 }
                 //create the log
