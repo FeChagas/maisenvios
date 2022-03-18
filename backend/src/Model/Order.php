@@ -4,6 +4,7 @@ namespace Maisenvios\Middleware\Model;
 class Order {
     private $id;
     private $orderId;
+    private $origin;
     private $invoiceNumber;
     private $tracking;
     private $storeId;
@@ -36,6 +37,26 @@ class Order {
     public function getOrderId()
     {
         return $this->orderId;
+    }
+
+    /**
+     * Get the value of origin
+     */ 
+    public function getOrigin()
+    {
+        return $this->origin;
+    }
+
+    /**
+     * Set the value of origin
+     *
+     * @return  self
+     */ 
+    public function setOrigin($origin)
+    {
+        $this->origin = $origin;
+
+        return $this;
     }
 
     /**
@@ -157,6 +178,7 @@ class Order {
         $order = new Order();
         (isset($arr['id'])) ? $order->setId($arr['id']) : null; 
         (isset($arr['orderId'])) ? $order->setOrderId($arr['orderId']) : null; 
+        (isset($arr['origin'])) ? $order->setOrigin($arr['origin']) : null; 
         (isset($arr['invoiceNumber'])) ? $order->setInvoiceNumber($arr['invoiceNumber']) : null; 
         (isset($arr['tracking'])) ? $order->setTracking($arr['tracking']) : null; 
         (isset($arr['storeId'])) ? $order->setStoreId($arr['storeId']) : null; 
@@ -170,6 +192,8 @@ class Order {
         $obj->setOrderId($order->orderId);
         $obj->setStoreId($storeId);
         $obj->setIntegrated(0);
+        $obj->setOrigin('VTEX');
+        $obj->setInvoiceNumber($order->packageAttachment->packages[0]->invoiceNumber);
         return $obj;
     }
 }
