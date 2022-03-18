@@ -180,8 +180,6 @@ class IntegrationController {
             $this->sgpLogRepo->create($log);
             throw new \Exception("Shop must have account, key and token", 1);            
         } else {
-
-            
             //Grabs the shop meta
             $shopMetas = $this->shopMetaRepo->findAll(['shopId' => $shop->getId()]);
             $steps = [];
@@ -241,7 +239,7 @@ class IntegrationController {
                             $log->setStatus("Transportadora inválida.");
                             $log->setObjetos(json_encode($fullOrder));
                             $this->sgpLogRepo->create($log);
-                            $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 2]);
+                            $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 'vtex_invalid_shipping_type']);
                         }
                     }
                 } else {
@@ -251,6 +249,48 @@ class IntegrationController {
                     $log->setObjetos( json_encode( $orderQuery ) );
                     $this->sgpLogRepo->create($log);
                 }                
+            } else {
+                /**
+                 * IMPORTANT: When the sgp_pre_post is not set we'll check if the orders that would be processed in this step
+                 * are already created in SGP through other means, like manual, for example;
+                 */
+                $orderQuery = ['storeId' => $shop->getId(), 'integrated' => 0];
+                $orders = $this->orderRepo->findAll($orderQuery);            
+                if (count($orders) > 0) {
+                    $vtexClient = new Vtex($shop->getAccount(), $shop->getCustomerKey(), $shop->getCustomerToken());
+                    $sgpClient = new Sgp($shop->getSysKey());
+                    $shippings = $this->shippingRepo->findAll(['idShop' => $shop->getId(), 'active' => 1]);
+                    foreach ($orders as $order) {
+                        $isInvalidShipping = true;
+                        foreach ($shippings as $shipping) {
+                            $fullOrder = $vtexClient->getOrder($order->getOrderId());
+                            if (strcmp($fullOrder->shippingData->logisticsInfo[0]->deliveryCompany, $shipping->getName()) === 0) {
+                                $isInvalidShipping = false;
+                                $result = $sgpClient->getByInvoiceNumbers([]);
+                                if ($result->retorno->status_processamento == 1) {
+                                    $updateOrderArgs = [
+                                        'integrated' => 1,
+                                        'invoiceNumber' => isset($fullOrder->packageAttachment->packages[0]->invoiceNumber) ? $fullOrder->packageAttachment->packages[0]->invoiceNumber : null,
+                                        'tracking' => isset($result->retorno->objetos[0]->objeto) ? $result->retorno->objetos[0]->objeto : null
+                                    ];
+                                    $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
+                                    $log = SgpLog::createFromSgpResponse($shop->getId(), $order->getOrderId(), $result);
+                                    $this->sgpLogRepo->create($log);
+                                }
+                            }                            
+                        }
+                        if ($isInvalidShipping) {
+                            $isInvalidShipping = true;
+                            $log = new SgpLog();
+                            $log->setOrderId($order->getOrderId());
+                            $log->setShopId( $shop->getId() );
+                            $log->setStatus("Transportadora inválida.");
+                            $log->setObjetos(json_encode($fullOrder));
+                            $this->sgpLogRepo->create($log);
+                            $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 'vtex_invalid_shipping_type']);
+                        }
+                    }
+                }
             }
 
             if (in_array('vtex_tracking_update', $steps)) {
