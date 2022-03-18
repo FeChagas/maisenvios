@@ -16,8 +16,9 @@ class OrderRepository extends BaseRepository {
             'storeId' => $order->getStoreId(),
             'integrated' => $order->getIntegrated(),
             'invoiceNumber' => $order->getInvoiceNumber(),
-            'tacking' => $order->getTracking(),
+            'tracking' => $order->getTracking(),
             'origin' => $order->getOrigin(),
+            'service' => $order->getService(),
         ];
         return $this->insert($payload);
     }

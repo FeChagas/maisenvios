@@ -1,6 +1,7 @@
 <?php
 namespace Maisenvios\Middleware\Controller;
 
+use Maisenvios\Middleware\Model\Order;
 use Maisenvios\Middleware\Model\SgpLog;
 use Maisenvios\Middleware\Model\SgpPrePost;
 use Maisenvios\Middleware\Repository\OrderRepository;
@@ -129,52 +130,42 @@ class IntegrationController {
             //Get all active shippings of this shop
             $shippings = $this->shippingRepo->findAll(['idShop' => $shop->getId(), 'active' => 1]);
             foreach ($shippings as $shipping) {
-                $orders = [];
-                //Should loop through pages, but the cron runs fast enough so its not need for now
-                do {
-                    $orderQuery = ['status'=> 'FAT', 'shipping_type' => $shipping->getName()];
-                    $result = $convertizeClient->listOrders($orderQuery);
-                    array_push($orders, ...$result->results);
-                    //Só ativar o loop caso seja realmente necessario
-                } while (1 > 1);
-
-                if (count($orders) > 0) {
-                    //if at least one order was returned we finally do something
-                    foreach ($orders as $order) {
-                        //check if it has been sucessfully integrated before
-                        $logHistory = $this->sgpLogRepo->findOneBy(['shopId' => $shop->getId(), 'orderId' => $order->id, 'status_processamento' => 1]);
-                        if (!$logHistory) {
-                            //create the sgp object
-                            $sgpObj = SgpPrePost::createFromConvertize($order, $shipping);
-                            //create the payload
-                            $json = SgpPrePost::generatePayload([$sgpObj]);
-                            //post it
-                            $result = $sgpClient->createPrePost($json);
-                            //Send the tracking code back
-                            foreach ($result->retorno->objetos as $objeto) {
-                                $payloadStatus = ["status" => "ETP"];
-                                $payloadTracker = [
-                                    "code" => $objeto->objeto,
-                                    "status" => "ETP"
-                                ];
-                                //send the tracking code back and update the order status
-                                $convertizeClient->setOrderTracker($order->id, $payloadTracker);
-                                $convertizeClient->setOrderStatus($order->id, $payloadStatus);
-                            }
-                            //create the log
-                            $log = SgpLog::createFromSgpResponse($shop->getId(), $order->id, $result);
-                            $this->sgpLogRepo->create($log);
-                        }
+                $orderQuery = ['status'=> 'FAT', 'shipping_type' => $shipping->getName()];
+                $result = $convertizeClient->listOrders($orderQuery);
+                foreach ($result->results as $order) {
+                    $orderInDB = $this->orderRepo->findOneBy( ['orderId' => $order->id, 'storeId' => $shop->getId()] );
+                    if ( count($orderInDB) == 0 ) {
+                        $order = (new Order())->createFromConvertize($order, $shop->getId(), $shipping->getCorreios());
+                        $this->orderRepo->create($order);
                     }
-                } else {
-                    //if no orders has returned, record it in the log
-                    $log = new SgpLog();
-                    $log->setShopId( $shop->getId() );
-                    $log->setStatus( "nenhum pedido encontrado" );
-                    $log->setObjetos( json_encode( $orderQuery ) );
-                    $this->sgpLogRepo->create($log);
                 }
             }
+
+            $orders = $this->orderRepo->findAll(['storeId' => $shop->getId(), 'integrated' => 0]);
+            foreach ($orders as $order) {
+                $fullOrder = $convertizeClient->getOrder($order->getOrderId());
+                //create the sgp object
+                $sgpObj = SgpPrePost::createFromConvertize($fullOrder, $order->getService());
+                //create the payload
+                $json = SgpPrePost::generatePayload([$sgpObj]);
+                //post it
+                $result = $sgpClient->createPrePost($json);
+                //Send the tracking code back
+                foreach ($result->retorno->objetos as $objeto) {
+                    $payloadStatus = ["status" => "ETP"];
+                    $payloadTracker = [
+                        "code" => $objeto->objeto,
+                        "status" => "ETP"
+                    ];
+                    //send the tracking code back and update the order status
+                    $convertizeClient->setOrderTracker($order->id, $payloadTracker);
+                    $convertizeClient->setOrderStatus($order->id, $payloadStatus);
+                    $this->orderRepo->update( ['orderId' => $order->getOrderId()] , ['integrated' => 1, 'tracking' => $objeto->objeto] );
+                }
+                //create the log
+                $log = SgpLog::createFromSgpResponse($shop->getId(), $order->id, $result);
+                $this->sgpLogRepo->create($log);
+            }                       
         }
     }
 
