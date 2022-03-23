@@ -39,7 +39,8 @@ class IntegrationController {
         //get the next shop to run
         //this search grabs the log and check the most recent log of each shop
         //and get the older from this group
-        $shops = ($shopId === 0) ? $this->shopRepo->findNextToRun() : $this->shopRepo->findOneBy(['id' => $shopId]);
+        // $shops = ($shopId === 0) ? $this->shopRepo->findNextToRun() : $this->shopRepo->findOneBy(['id' => $shopId]);
+        $shops = ($shopId === 0) ? $this->shopRepo->findAll(['active' => 1], 5, ['lastRunAt' => 'ASC']) : $this->shopRepo->findOneBy(['id' => $shopId]);
         foreach ($shops as $shop) {            
             switch ($shop->getEcommerce()) {
                 case 'lojaintegrada':
@@ -60,6 +61,8 @@ class IntegrationController {
                     $this->sgpLogRepo->create($log);
                     break;
             }
+            
+            $this->shopRepo->update(['id' => $shop->getId()], ['lastRunAt' => (new \DateTime())->format('Y-m-d H:i:s') ]);
         }
     }
 

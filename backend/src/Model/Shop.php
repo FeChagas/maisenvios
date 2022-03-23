@@ -10,6 +10,7 @@ class Shop {
     private $account;
     private $ecommerce;
     private $active;
+    private $lastRunAt;
 
     /**
      * Get the value of id
@@ -171,6 +172,26 @@ class Shop {
         return $this;
     }
 
+    /**
+     * Get the value of lastRunAt
+     */ 
+    public function getLastRunAt()
+    {
+        return $this->lastRunAt;
+    }
+
+    /**
+     * Set the value of lastRunAt
+     *
+     * @return  self
+     */ 
+    public function setLastRunAt($lastRunAt)
+    {
+        $this->lastRunAt = $lastRunAt;
+
+        return $this;
+    }
+
     /* 
     * Creates an Shop object 
     */
@@ -184,6 +205,7 @@ class Shop {
         ($arr['account']) ? $shop->setAccount($arr['account']) : null; 
         ($arr['ecommerce']) ? $shop->setEcommerce($arr['ecommerce']) : null; 
         ($arr['active']) ? $shop->setActive($arr['active']) : null;
+        ($arr['lastRunAt']) ? $shop->setLastRunAt($arr['lastRunAt']) : null;
         return $shop;
     }
 }
