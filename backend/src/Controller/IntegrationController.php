@@ -40,7 +40,7 @@ class IntegrationController {
         //this search grabs the log and check the most recent log of each shop
         //and get the older from this group
         // $shops = ($shopId === 0) ? $this->shopRepo->findNextToRun() : $this->shopRepo->findOneBy(['id' => $shopId]);
-        $shops = ($shopId === 0) ? $this->shopRepo->findAll(['active' => 1], 5, ['lastRunAt' => 'ASC']) : $this->shopRepo->findOneBy(['id' => $shopId]);
+        $shops = ($shopId === 0) ? $this->shopRepo->findAll(['active' => 1], 0, ['lastRunAt' => 'ASC']) : $this->shopRepo->findOneBy(['id' => $shopId]);
         foreach ($shops as $shop) {            
             switch ($shop->getEcommerce()) {
                 case 'lojaintegrada':
