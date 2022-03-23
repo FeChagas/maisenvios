@@ -266,16 +266,19 @@ class IntegrationController {
                             $fullOrder = $vtexClient->getOrder($order->getOrderId());
                             if (strcmp($fullOrder->shippingData->logisticsInfo[0]->deliveryCompany, $shipping->getName()) === 0) {
                                 $isInvalidShipping = false;
-                                $result = $sgpClient->getByInvoiceNumbers([]);
-                                if ($result->retorno->status_processamento == 1) {
-                                    $updateOrderArgs = [
-                                        'integrated' => 1,
-                                        'invoiceNumber' => isset($fullOrder->packageAttachment->packages[0]->invoiceNumber) ? $fullOrder->packageAttachment->packages[0]->invoiceNumber : null,
-                                        'tracking' => isset($result->retorno->objetos[0]->objeto) ? $result->retorno->objetos[0]->objeto : null
-                                    ];
-                                    $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
-                                    $log = SgpLog::createFromSgpResponse($shop->getId(), $order->getOrderId(), $result);
-                                    $this->sgpLogRepo->create($log);
+                                if (isset( $fullOrder->packageAttachment->packages[0]->invoiceNumber ) && ! is_null( $fullOrder->packageAttachment->packages[0]->invoiceNumber )) {
+                                    $args = [ $fullOrder->packageAttachment->packages[0]->invoiceNumber ];
+                                    $result = $sgpClient->getByInvoiceNumbers( $args );
+                                    if ($result->retorno->status_processamento == 1) {
+                                        $updateOrderArgs = [
+                                            'integrated' => 1,
+                                            'invoiceNumber' => isset($fullOrder->packageAttachment->packages[0]->invoiceNumber) ? $fullOrder->packageAttachment->packages[0]->invoiceNumber : null,
+                                            'tracking' => isset($result->retorno->objetos[0]->objeto) ? $result->retorno->objetos[0]->objeto : null
+                                        ];
+                                        $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
+                                        $log = SgpLog::createFromSgpResponse($shop->getId(), $order->getOrderId(), $result);
+                                        $this->sgpLogRepo->create($log);
+                                    }
                                 }
                             }                            
                         }
