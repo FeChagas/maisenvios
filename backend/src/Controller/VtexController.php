@@ -16,6 +16,7 @@ class VtexController {
     private $sgpLogRepo;
     private $vtexClient;
     private $shippingRepo;
+    private $shippings = [];
 
     public function __construct(Shop $shop)
     {
@@ -129,7 +130,7 @@ class VtexController {
     }
 
     public function hasValidShipping($orderShipping) {
-        if (!$this->shippings || empty($this->shippings)) {
+        if (empty($this->shippings)) {
             $shippings = $this->shippingRepo->findAll(['idShop' => $this->shop->getId(), 'active' => 1]);
             foreach ($shippings as $shipping) {
                 array_push($this->shippings, $shipping->getName());
