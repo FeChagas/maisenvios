@@ -224,6 +224,7 @@ class IntegrationController {
                                 $result = $sgpClient->createPrePost($json);
                                 if ($result->retorno->status_processamento == 1) {
                                     $updateOrderArgs = [
+                                        'service' => $shipping->getCorreios(),
                                         'integrated' => 1,
                                         'invoiceNumber' => isset($fullOrder->packageAttachment->packages[0]->invoiceNumber) ? $fullOrder->packageAttachment->packages[0]->invoiceNumber : null,
                                         'tracking' => isset($result->retorno->objetos[0]->objeto) ? $result->retorno->objetos[0]->objeto : null
