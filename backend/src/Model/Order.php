@@ -231,8 +231,10 @@ class Order {
         return $order;
     }
 
-    public function createFromVtexFeed($order, $storeId) {
+    public function createFromVtex($order, $storeId, $service = null, $tracking = null) {
         $obj = new Order();
+        $obj->setTracking( $tracking );
+        $obj->setService( $service );
         $obj->setOrderId($order->orderId);
         $obj->setStoreId($storeId);
         $obj->setIntegrated(0);

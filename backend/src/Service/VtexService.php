@@ -63,7 +63,7 @@ class VtexService {
         $this->vtexClient->createHook($hookArgs);
         $log = new SgpLog();
         $log->setShopId( $this->shop->getId() );
-        $log->setStatus("Hook criado.");
+        $log->setStatus("Hook e Feed criado/atualizado.");
         $log->setObjetos(json_encode($hookArgs));
         $this->sgpLogRepo->create($log);
         return;
