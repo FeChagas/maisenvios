@@ -311,7 +311,10 @@ class IntegrationController {
                                 "orderId" => $order->getOrderId(),
                                 "invoiceNumber" => $order->getInvoiceNumber(),
                                 "isDelivered" => false,
-                                "events" => []
+                                "events" => [
+                                    "description" => "Entregue a transportadora",
+                                    "date" => date('Y-m-d')
+                                ]
                             ];
                             $result = $vtexClient->updateOrderTracking( $order->getOrderId(), $order->getInvoiceNumber(), $args);
                             if (isset($result->receipt)) {
