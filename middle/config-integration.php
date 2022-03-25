@@ -55,7 +55,16 @@
                         <input id="vtex_tracking_update" class="form-check-input" type="checkbox" value="vtex_tracking_update" name="vtex_integration_step">
                         <label class="form-check-label" for="vtex_tracking_update">Enviar código de rastreio para a VTEX</label>
                     </div>
+                    <div class="form-check mr-2 mt-2 sm:mt-0">
+                        <input id="vtex_call_endpoint" class="form-check-input" type="checkbox" value="vtex_call_endpoint" name="vtex_integration_step">
+                        <label class="form-check-label" for="vtex_call_endpoint">Chama o callback do cliente para pedidos já integrados</label>
+                    </div>
                 </div>
+            </div>
+
+              <div class="mt-6">
+                <label for="vtex_endpoint_to_call" class="form-label">Endpoint do cliente</label>
+                <input disabled id="vtex_endpoint_to_call" type="text" class="form-control" placeholder="https://sistema.com/endpoint" name="vtex_endpoint_to_call">
             </div>
             <div class="mt-5">
                 <button class="btn btn-primary" type="submit">Salvar</button>

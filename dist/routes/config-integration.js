@@ -10,6 +10,13 @@ $(document).ready(() => {
   var urlParams = new URLSearchParams(window.location.search);
   const SHOP_ID = urlParams.get("idShop");
   if (SHOP_ID > 0) {
+    $("#vtex_call_endpoint").change(() => {
+      $("#vtex_endpoint_to_call").prop(
+        "disabled",
+        !$("#vtex_call_endpoint").is(":checked")
+      );
+    });
+
     actionUrl = HOST_URL + `/php/shop/ready.php?id=${SHOP_ID}`;
     $.ajax({
       type: "GET",
@@ -37,6 +44,9 @@ $(document).ready(() => {
                         value +
                         '"]'
                     ).prop("checked", true);
+                    $("#" + element.name)
+                      .val(value)
+                      .prop("disabled", !value);
                   });
                 });
               },
@@ -50,6 +60,7 @@ $(document).ready(() => {
                   payload = {
                     vtex_integration_step: [],
                     vtex_order_status: [],
+                    vtex_endpoint_to_call: [],
                   };
                   $('input[name="vtex_integration_step"]:checked').each(
                     (index, object) => {
@@ -61,6 +72,10 @@ $(document).ready(() => {
                     (index, object) => {
                       payload["vtex_order_status"].push(object.value);
                     }
+                  );
+
+                  payload["vtex_endpoint_to_call"].push(
+                    $("#vtex_endpoint_to_call").val()
                   );
 
                   break;

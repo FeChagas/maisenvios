@@ -43,7 +43,7 @@ License: You must have a valid license purchased only from themeforest(the above
                         <h2 class="intro-x font-bold text-2xl xl:text-3xl text-center xl:text-left">
                             Bem-vindo!
                         </h2>
-                        <form action="/painel/php/users/login" id="login">
+                        <form action="/php/users/login.php" id="login">
                           <div class="intro-x mt-8">
                               <input type="text" class="intro-x login__input form-control py-3 px-4 border-gray-300 block" placeholder="E-mail" name="email">
                               <input type="password" class="intro-x login__input form-control py-3 px-4 border-gray-300 block mt-4" placeholder="Senha" name="password">
