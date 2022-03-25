@@ -1,6 +1,7 @@
 <?php
 namespace Maisenvios\Middleware\Controller;
 
+use Curl\Curl;
 use Maisenvios\Middleware\Model\Order;
 use Maisenvios\Middleware\Model\SgpLog;
 use Maisenvios\Middleware\Model\SgpPrePost;
@@ -187,6 +188,7 @@ class IntegrationController {
             $shopMetas = $this->shopMetaRepo->findAll(['shopId' => $shop->getId()]);
             $steps = [];
             $order_status = [];
+            $endpoint_to_call = '';
             foreach ($shopMetas as $key => $meta) {
                 switch ($meta->getName()) {
                     case 'vtex_integration_step':
@@ -195,6 +197,10 @@ class IntegrationController {
                         
                     case 'vtex_order_status':
                         $order_status = maybe_unserialize( $meta->getValue() );
+                        break;
+
+                    case 'vtex_endpoint_to_call':
+                        $endpoint_to_call = filter_var($meta->getValue(), FILTER_VALIDATE_URL);
                         break;
                     default:
                     # code...
@@ -331,7 +337,30 @@ class IntegrationController {
                         }
                     }
                 }  
-            }            
+            }
+
+            if (in_array('vtex_call_endpoint', $steps) && !empty($endpoint_to_call)) {
+                $client = new Curl();
+                $orders = $this->orderRepo->findAll(['storeId' => $shop->getId(), 'integrated' => 'vtex_tracking_update' ]);
+                foreach ($orders as $order) {
+                    $payload = [
+                        "origin" => $order->getOrigin(),
+                        "orderId" => $order->getOrderId(),
+                        "service" => $order->getService(),
+                        "invoiceNumber" => $order->getInvoiceNumber(),
+                        "tracking" => $order->getTracking(),
+                        "createdAt" => $order->getCreatedAt(),
+                        "updatedAt" => $order->getUpdatedAt()
+                    ];                    
+                    $client->post($endpoint_to_call, $payload);
+                    if ( !$client->error ) {
+                        $updateArgs = [
+                            'integrated' => 'vtex_callback_success'
+                        ];
+                        $this->orderRepo->update(['id' => $order->getId()], $updateArgs);
+                    }
+                }
+            }
         }
 
         return;
