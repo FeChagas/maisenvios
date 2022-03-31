@@ -63,6 +63,11 @@ class Vtex {
       * TRACKING
       */
 
+    public function sendInvoiceInformation(string $orderId, array $args) {
+        $this->connection->post("{$this->endpoint}/oms/pvt/orders/{$orderId}/invoice", $args);
+        return $this->connection->response;
+    }
+
     public function updateOrderTracking(string $orderId, string $invoiceNumber, array $args) {
         $this->connection->put("{$this->endpoint}/oms/pvt/orders/{$orderId}/invoice/{$invoiceNumber}/tracking", $args);
         return $this->connection->response;

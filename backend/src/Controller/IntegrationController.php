@@ -307,13 +307,17 @@ class IntegrationController {
             }
 
             if (in_array('vtex_tracking_update', $steps)) {
+                //Grabs orders that already have its tracking code
                 $orderQuery = ['storeId' => $shop->getId(), 'integrated' => 1];
                 $orders = $this->orderRepo->findAll($orderQuery);            
                 if (count($orders) > 0) {
                     $vtexClient = new Vtex($shop->getAccount(), $shop->getCustomerKey(), $shop->getCustomerToken());
                     foreach ($orders as $order) {
                         if($order->getTracking() !== null && $order->getInvoiceNumber() !== null) {
-                            $args = [
+                            //Retrieve the full order from VTEX
+                            $fullOrder = $vtexClient->getOrder($order->getOrderId());
+                            // Prepare payload to create the event
+                            $updateOrderTrackingArgs = [
                                 "orderId" => $order->getOrderId(),
                                 "invoiceNumber" => $order->getInvoiceNumber(),
                                 "isDelivered" => false,
@@ -322,8 +326,31 @@ class IntegrationController {
                                     "date" => date('Y-m-d')
                                 ]
                             ];
-                            $result = $vtexClient->updateOrderTracking( $order->getOrderId(), $order->getInvoiceNumber(), $args);
-                            if (isset($result->receipt)) {
+                            
+                            //Prepares the payload to actually send the tracking code
+                            $sendInvoiceInformationItems = [];
+                            foreach ($fullOrder->packageAttachment->packages[0]->items as $item) {
+                                array_push( $sendInvoiceInformationItems, [
+                                        "id" => $fullOrder->items[ $item->itemIndex ]->id,
+                                        "price" => $item->price,
+                                        "quantity" => $item->quantity
+                                    ]
+                                );
+                            }
+
+                            $sendInvoiceInformationArgs = [
+                                "type" => "Output",
+                                "trackingNumber" => $order->getTracking(),
+                                "issuanceDate" => $fullOrder->packageAttachment->packages[0]->issuanceDate,
+                                "invoiceNumber" => $fullOrder->packageAttachment->packages[0]->trackingNumber,
+                                "invoiceValue" => $fullOrder->packageAttachment->packages[0]->invoiceValue,
+                                "items" => $sendInvoiceInformationItems
+                            ];
+
+                            //send both the event and tracking code
+                            $sendInvoiceInformationResult = $vtexClient->sendInvoiceInformation($order->getOrderId(), $sendInvoiceInformationArgs);
+                            $updateOrderTrackingResult = $vtexClient->updateOrderTracking( $order->getOrderId(), $order->getInvoiceNumber(), $updateOrderTrackingArgs);
+                            if (isset($updateOrderTrackingResult->receipt) && isset($sendInvoiceInformationResult->receipt)) {
                                 $updateOrderArgs = [
                                     'integrated' => 'vtex_tracking_update',
                                 ];
@@ -331,7 +358,7 @@ class IntegrationController {
                                 $log = new SgpLog();
                                 $log->setShopId( $shop->getId() );
                                 $log->setStatus( "Código de rastreio enviado" );
-                                $log->setObjetos( json_encode( $result ) );
+                                $log->setObjetos( json_encode( [$updateOrderTrackingResult, $sendInvoiceInformationResult] ) );
                                 $this->sgpLogRepo->create($log);
                             }
                         }
