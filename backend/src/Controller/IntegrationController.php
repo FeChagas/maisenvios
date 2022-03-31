@@ -316,51 +316,57 @@ class IntegrationController {
                         if($order->getTracking() !== null && $order->getInvoiceNumber() !== null) {
                             //Retrieve the full order from VTEX
                             $fullOrder = $vtexClient->getOrder($order->getOrderId());
-                            // Prepare payload to create the event
-                            $updateOrderTrackingArgs = [
-                                "orderId" => $order->getOrderId(),
-                                "invoiceNumber" => $order->getInvoiceNumber(),
-                                "isDelivered" => false,
-                                "events" => [
-                                    "description" => "Entregue a transportadora",
-                                    "date" => date('Y-m-d')
-                                ]
-                            ];
-                            
-                            //Prepares the payload to actually send the tracking code
-                            $sendInvoiceInformationItems = [];
-                            foreach ($fullOrder->packageAttachment->packages[0]->items as $item) {
-                                array_push( $sendInvoiceInformationItems, [
-                                        "id" => $fullOrder->items[ $item->itemIndex ]->id,
-                                        "price" => $item->price,
-                                        "quantity" => $item->quantity
-                                    ]
-                                );
+
+                            foreach ($fullOrder->packageAttachment->packages as $package) {
+                                if ($package->invoiceNumber == $order->getInvoiceNumber()) {
+                                    // Prepare payload to create the event
+                                    $updateOrderTrackingArgs = [
+                                        "orderId" => $order->getOrderId(),
+                                        "invoiceNumber" => $order->getInvoiceNumber(),
+                                        "isDelivered" => false,
+                                        "events" => [
+                                            "description" => "Entregue a transportadora",
+                                            "date" => date('Y-m-d')
+                                        ]
+                                    ];
+                                    
+                                    //Prepares the payload to actually send the tracking code
+                                    $sendInvoiceInformationItems = [];
+                                    foreach ($package->items as $item) {
+                                        array_push( $sendInvoiceInformationItems, [
+                                                "id" => $fullOrder->items[ $item->itemIndex ]->id,
+                                                "price" => $item->price,
+                                                "quantity" => $item->quantity
+                                            ]
+                                        );
+                                    }
+                                    
+                                    $sendInvoiceInformationArgs = [
+                                        "type" => "Output",
+                                        "trackingNumber" => $order->getTracking(),
+                                        "issuanceDate" => $package->issuanceDate,
+                                        "invoiceNumber" => $package->invoiceNumber,
+                                        "invoiceValue" => $package->invoiceValue,
+                                        "items" => $sendInvoiceInformationItems
+                                    ];
+                                    
+                                    //send both the event and tracking code
+                                    $sendInvoiceInformationResult = $vtexClient->sendInvoiceInformation($order->getOrderId(), $sendInvoiceInformationArgs);
+                                    $updateOrderTrackingResult = $vtexClient->updateOrderTracking( $order->getOrderId(), $order->getInvoiceNumber(), $updateOrderTrackingArgs);
+                                    if (isset($updateOrderTrackingResult->receipt) && isset($sendInvoiceInformationResult->receipt)) {
+                                        $updateOrderArgs = [
+                                            'integrated' => 'vtex_tracking_update',
+                                        ];
+                                        $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
+                                        $log = new SgpLog();
+                                        $log->setShopId( $shop->getId() );
+                                        $log->setStatus( "Código de rastreio enviado" );
+                                        $log->setObjetos( json_encode( [$updateOrderTrackingResult, $sendInvoiceInformationResult] ) );
+                                        $this->sgpLogRepo->create($log);
+                                    }
+                                }
                             }
 
-                            $sendInvoiceInformationArgs = [
-                                "type" => "Output",
-                                "trackingNumber" => $order->getTracking(),
-                                "issuanceDate" => $fullOrder->packageAttachment->packages[0]->issuanceDate,
-                                "invoiceNumber" => $fullOrder->packageAttachment->packages[0]->trackingNumber,
-                                "invoiceValue" => $fullOrder->packageAttachment->packages[0]->invoiceValue,
-                                "items" => $sendInvoiceInformationItems
-                            ];
-
-                            //send both the event and tracking code
-                            $sendInvoiceInformationResult = $vtexClient->sendInvoiceInformation($order->getOrderId(), $sendInvoiceInformationArgs);
-                            $updateOrderTrackingResult = $vtexClient->updateOrderTracking( $order->getOrderId(), $order->getInvoiceNumber(), $updateOrderTrackingArgs);
-                            if (isset($updateOrderTrackingResult->receipt) && isset($sendInvoiceInformationResult->receipt)) {
-                                $updateOrderArgs = [
-                                    'integrated' => 'vtex_tracking_update',
-                                ];
-                                $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
-                                $log = new SgpLog();
-                                $log->setShopId( $shop->getId() );
-                                $log->setStatus( "Código de rastreio enviado" );
-                                $log->setObjetos( json_encode( [$updateOrderTrackingResult, $sendInvoiceInformationResult] ) );
-                                $this->sgpLogRepo->create($log);
-                            }
                         }
                     }
                 }  
