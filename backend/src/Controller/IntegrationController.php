@@ -53,8 +53,20 @@ class IntegrationController {
                     break;
                 
                 case 'VTEX':
-                    $this->integrateVtex($shop);
+                    $integratesTo = $this->shopMetaRepo->findOneBy( ['name' => 'integrates_to', 'shopId' => $shop->getId()] );
+                    if ($integratesTo == 'SGP') {
+                        $this->integrateVtexToSgp($shop);
+                    } else if ($integratesTo == 'MaisEnvios') {
+                        $this->integrateVtexToMaisEnvios($shop);
+                    } else {
+                        $log = new SgpLog();
+                        $log->setShopId( $shop->getId() );
+                        $log->setStatus("O cliente {$shop->getName()} não definiu uma plataforma de integração");
+                        $this->sgpLogRepo->create($log);
+                        break;
+                    }
                     break;
+
                 default:
                     $log = new SgpLog();
                     $log->setShopId( $shop->getId() );
@@ -176,7 +188,7 @@ class IntegrationController {
     /**
      * Run the VTEX integration workflow
      */
-    private function integrateVtex($shop) { 
+    private function integrateVtexToSgp($shop) { 
         if ($shop->getAccount() === null || $shop->getCustomerKey() === null || $shop->getCustomerToken() === null) {
             $log = new SgpLog();
             $log->setShopId( $shop->getId() );
@@ -396,6 +408,10 @@ class IntegrationController {
             }
         }
 
+        return;
+    }
+
+    private function integrateVtexToMaisEnvios($shop) {
         return;
     }
 }

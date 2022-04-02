@@ -7,22 +7,75 @@ const HOST_URL = myScript.src.replace(/^[^\?]+\??/, "");
 var urlParams = new URLSearchParams(window.location.search);
 const SHOP_ID = urlParams.get("idShop");
 
+$("#ecommerce").on("change", () => {
+  if ($("#ecommerce option:selected").val() != "Selecione uma plataforma") {
+    $("#label-of-integrates_to").html(
+      "Integrar a " + $("#ecommerce option:selected").text() + " com:"
+    );
+  } else {
+    $("#label-of-integrates_to").html(
+      "Selecione uma plataforma para integrar:"
+    );
+  }
+});
+
+$("#integrates_to").on("change", () => {
+  switch ($("#integrates_to option:selected").val()) {
+    case "SGP":
+      $("#maisenvios-auth").hide();
+      $("#sgp-auth").show();
+      break;
+
+    case "MaisEnvios":
+      $("#sgp-auth").hide();
+      $("#maisenvios-auth").show();
+      break;
+
+    default:
+      $("#maisenvios-auth").hide();
+      $("#sgp-auth").hide();
+      break;
+  }
+});
+
 if (SHOP_ID > 0) {
-  actionUrl = HOST_URL + `/php/shop/ready.php?id=${SHOP_ID}`;
   $.ajax({
     type: "GET",
-    url: actionUrl,
-    success: function (data) {
-      data.forEach((element) => {
-        $(`input[name=name]`).val(element.name);
-        $(`input[name=key_mais]`).val(element.key_mais);
-        $(`input[name=key_primary]`).val(element.key_primary);
-        $(`input[name=token_primary]`).val(element.token_primary);
-        $(`input[name=account]`).val(element.account);
-        $(`select[name=ecommerce] option[value=${element.ecommerce}]`).attr(
-          "selected",
-          "selected"
-        );
+    url: HOST_URL + `/php/shop/ready.php?id=${SHOP_ID}`,
+    success: function (shops) {
+      $.ajax({
+        type: "GET",
+        url:
+          HOST_URL +
+          `/php/shop_meta/get.php?shop_id=${SHOP_ID}&name=integrates_to`,
+        success: (metas) => {
+          metas.forEach((element) => {
+            $(`select[name=integrates_to] option[value=${element.value}]`).attr(
+              "selected",
+              "selected"
+            );
+            $("#integrates_to").trigger("change");
+            shops.forEach((element) => {
+              $(`input[name=name]`).val(element.name);
+              $(`input[name=key_primary]`).val(element.key_primary);
+              $(`input[name=token_primary]`).val(element.token_primary);
+              $(`input[name=account]`).val(element.account);
+              $(
+                `select[name=ecommerce] option[value=${element.ecommerce}]`
+              ).attr("selected", "selected");
+              $("#ecommerce").trigger("change");
+              console.log($("#integrates_to").val());
+              if ($("#integrates_to").val() == "SGP") {
+                $(`input[name=key_mais]`).val(element.key_mais);
+              } else if ($("#integrates_to").val() == "MaisEnvios") {
+                var maisEnviosCredencials = unserialize(element.key_mais);
+                console.log(maisEnviosCredencials);
+                $(`#maisenvios-username`).val(maisEnviosCredencials.username);
+                $(`#maisenvios-password`).val(maisEnviosCredencials.password);
+              }
+            });
+          });
+        },
       });
     },
   });
@@ -34,25 +87,437 @@ $("#new-shop").submit(function (e) {
   var form = $("#new-shop");
   var actionUrl = HOST_URL + form.attr("action");
 
+  var payload = {
+    name: $("#name").val(),
+    ecommerce: $("#ecommerce").val(),
+    account: $("#account-name").val(),
+    key_primary: $("#primary-key").val(),
+    token_primary: $("#primary-token").val(),
+  };
+
+  switch ($("#integrates_to").val()) {
+    case "SGP":
+      payload.key_mais = $("#sgp-key").val();
+      break;
+
+    case "MaisEnvios":
+      payload.key_mais = serialize({
+        username: $("#maisenvios-username").val(),
+        password: $("#maisenvios-password").val(),
+      });
+      break;
+
+    default:
+      break;
+  }
+
   if (SHOP_ID > 0) {
     var actionUrl = `${HOST_URL}/php/shop/edit.php?id=${SHOP_ID}`;
   }
   $.ajax({
     type: "POST",
     url: actionUrl,
-    data: form.serialize(), // serializes the form's elements.
+    data: payload,
     success: function (data) {
       if (data.success == false) {
         Swal.fire("Atenção!", "Loja já cadastrado na base", "error");
       } else if (data.success == true) {
-        Swal.fire({
-          title: "Sucesso!",
-          text: "Cadastro efetuado com sucesso",
-          confirmButtonText: "Legal",
-        }).then((result) => {
-          window.location.replace(HOST_URL + "/ready-shops.php");
+        $.ajax({
+          type: "POST",
+          url: HOST_URL + `/php/shop_meta/edit.php?shop_id=${SHOP_ID}`,
+          data: { integrates_to: $("#integrates_to").val() },
+          success: (data) => {
+            console.log(data);
+            Swal.fire({
+              title: "Sucesso!",
+              text: "Cadastro efetuado com sucesso",
+              confirmButtonText: "Legal",
+            }).then((result) => {
+              window.location.replace(HOST_URL + "/ready-shops.php");
+            });
+          },
         });
       }
     },
   });
 });
+
+function serialize(mixedValue) {
+  let val, key, okey;
+  let ktype = "";
+  let vals = "";
+  let count = 0;
+  const _utf8Size = function (str) {
+    return ~-encodeURI(str).split(/%..|./).length;
+  };
+  const _getType = function (inp) {
+    let match;
+    let key;
+    let cons;
+    let types;
+    let type = typeof inp;
+    if (type === "object" && !inp) {
+      return "null";
+    }
+    if (type === "object") {
+      if (!inp.constructor) {
+        return "object";
+      }
+      cons = inp.constructor.toString();
+      match = cons.match(/(\w+)\(/);
+      if (match) {
+        cons = match[1].toLowerCase();
+      }
+      types = ["boolean", "number", "string", "array"];
+      for (key in types) {
+        if (cons === types[key]) {
+          type = types[key];
+          break;
+        }
+      }
+    }
+    return type;
+  };
+  const type = _getType(mixedValue);
+  switch (type) {
+    case "function":
+      val = "";
+      break;
+    case "boolean":
+      val = "b:" + (mixedValue ? "1" : "0");
+      break;
+    case "number":
+      val =
+        (Math.round(mixedValue) === mixedValue ? "i" : "d") + ":" + mixedValue;
+      break;
+    case "string":
+      val = "s:" + _utf8Size(mixedValue) + ':"' + mixedValue + '"';
+      break;
+    case "array":
+    case "object":
+      val = "a";
+      /*
+      if (type === 'object') {
+        var objname = mixedValue.constructor.toString().match(/(\w+)\(\)/);
+        if (objname === undefined) {
+          return;
+        }
+        objname[1] = serialize(objname[1]);
+        val = 'O' + objname[1].substring(1, objname[1].length - 1);
+      }
+      */
+      for (key in mixedValue) {
+        if (mixedValue.hasOwnProperty(key)) {
+          ktype = _getType(mixedValue[key]);
+          if (ktype === "function") {
+            continue;
+          }
+          okey = key.match(/^[0-9]+$/) ? parseInt(key, 10) : key;
+          vals += serialize(okey) + serialize(mixedValue[key]);
+          count++;
+        }
+      }
+      val += ":" + count + ":{" + vals + "}";
+      break;
+    case "undefined":
+    default:
+      // Fall-through
+      // if the JS object has a property which contains a null value,
+      // the string cannot be unserialized by PHP
+      val = "N";
+      break;
+  }
+  if (type !== "object" && type !== "array") {
+    val += ";";
+  }
+  return val;
+}
+
+function unserialize(str) {
+  try {
+    if (typeof str !== "string") {
+      return false;
+    }
+    return expectType(str, initCache())[0];
+  } catch (err) {
+    console.error(err);
+    return false;
+  }
+}
+
+function initCache() {
+  const store = [];
+  // cache only first element, second is length to jump ahead for the parser
+  const cache = function cache(value) {
+    store.push(value[0]);
+    return value;
+  };
+  cache.get = (index) => {
+    if (index >= store.length) {
+      throw RangeError(`Can't resolve reference ${index + 1}`);
+    }
+    return store[index];
+  };
+  return cache;
+}
+function expectType(str, cache) {
+  const types = /^(?:N(?=;)|[bidsSaOCrR](?=:)|[^:]+(?=:))/g;
+  const type = (types.exec(str) || [])[0];
+  if (!type) {
+    throw SyntaxError("Invalid input: " + str);
+  }
+  switch (type) {
+    case "N":
+      return cache([null, 2]);
+    case "b":
+      return cache(expectBool(str));
+    case "i":
+      return cache(expectInt(str));
+    case "d":
+      return cache(expectFloat(str));
+    case "s":
+      return cache(expectString(str));
+    case "S":
+      return cache(expectEscapedString(str));
+    case "a":
+      return expectArray(str, cache);
+    case "O":
+      return expectObject(str, cache);
+    case "C":
+      return expectClass(str, cache);
+    case "r":
+    case "R":
+      return expectReference(str, cache);
+    default:
+      throw SyntaxError(`Invalid or unsupported data type: ${type}`);
+  }
+}
+function expectBool(str) {
+  const reBool = /^b:([01]);/;
+  const [match, boolMatch] = reBool.exec(str) || [];
+  if (!boolMatch) {
+    throw SyntaxError("Invalid bool value, expected 0 or 1");
+  }
+  return [boolMatch === "1", match.length];
+}
+function expectInt(str) {
+  const reInt = /^i:([+-]?\d+);/;
+  const [match, intMatch] = reInt.exec(str) || [];
+  if (!intMatch) {
+    throw SyntaxError("Expected an integer value");
+  }
+  return [parseInt(intMatch, 10), match.length];
+}
+function expectFloat(str) {
+  const reFloat = /^d:(NAN|-?INF|(?:\d+\.\d*|\d*\.\d+|\d+)(?:[eE][+-]\d+)?);/;
+  const [match, floatMatch] = reFloat.exec(str) || [];
+  if (!floatMatch) {
+    throw SyntaxError("Expected a float value");
+  }
+  let floatValue;
+  switch (floatMatch) {
+    case "NAN":
+      floatValue = Number.NaN;
+      break;
+    case "-INF":
+      floatValue = Number.NEGATIVE_INFINITY;
+      break;
+    case "INF":
+      floatValue = Number.POSITIVE_INFINITY;
+      break;
+    default:
+      floatValue = parseFloat(floatMatch);
+      break;
+  }
+  return [floatValue, match.length];
+}
+function readBytes(str, len, escapedString = false) {
+  let bytes = 0;
+  let out = "";
+  let c = 0;
+  const strLen = str.length;
+  let wasHighSurrogate = false;
+  let escapedChars = 0;
+  while (bytes < len && c < strLen) {
+    let chr = str.charAt(c);
+    const code = chr.charCodeAt(0);
+    const isHighSurrogate = code >= 0xd800 && code <= 0xdbff;
+    const isLowSurrogate = code >= 0xdc00 && code <= 0xdfff;
+    if (escapedString && chr === "\\") {
+      chr = String.fromCharCode(parseInt(str.substr(c + 1, 2), 16));
+      escapedChars++;
+      // each escaped sequence is 3 characters. Go 2 chars ahead.
+      // third character will be jumped over a few lines later
+      c += 2;
+    }
+    c++;
+    bytes +=
+      isHighSurrogate || (isLowSurrogate && wasHighSurrogate)
+        ? // if high surrogate, count 2 bytes, as expectation is to be followed by low surrogate
+          // if low surrogate preceded by high surrogate, add 2 bytes
+          2
+        : code > 0x7ff
+        ? // otherwise low surrogate falls into this part
+          3
+        : code > 0x7f
+        ? 2
+        : 1;
+    // if high surrogate is not followed by low surrogate, add 1 more byte
+    bytes += wasHighSurrogate && !isLowSurrogate ? 1 : 0;
+    out += chr;
+    wasHighSurrogate = isHighSurrogate;
+  }
+  return [out, bytes, escapedChars];
+}
+function expectString(str) {
+  // PHP strings consist of one-byte characters.
+  // JS uses 2 bytes with possible surrogate pairs.
+  // Serialized length of 2 is still 1 JS string character
+  const reStrLength = /^s:(\d+):"/g; // also match the opening " char
+  const [match, byteLenMatch] = reStrLength.exec(str) || [];
+  if (!match) {
+    throw SyntaxError("Expected a string value");
+  }
+  const len = parseInt(byteLenMatch, 10);
+  str = str.substr(match.length);
+  const [strMatch, bytes] = readBytes(str, len);
+  if (bytes !== len) {
+    throw SyntaxError(`Expected string of ${len} bytes, but got ${bytes}`);
+  }
+  str = str.substr(strMatch.length);
+  // strict parsing, match closing "; chars
+  if (!str.startsWith('";')) {
+    throw SyntaxError('Expected ";');
+  }
+  return [strMatch, match.length + strMatch.length + 2]; // skip last ";
+}
+function expectEscapedString(str) {
+  const reStrLength = /^S:(\d+):"/g; // also match the opening " char
+  const [match, strLenMatch] = reStrLength.exec(str) || [];
+  if (!match) {
+    throw SyntaxError("Expected an escaped string value");
+  }
+  const len = parseInt(strLenMatch, 10);
+  str = str.substr(match.length);
+  const [strMatch, bytes, escapedChars] = readBytes(str, len, true);
+  if (bytes !== len) {
+    throw SyntaxError(
+      `Expected escaped string of ${len} bytes, but got ${bytes}`
+    );
+  }
+  str = str.substr(strMatch.length + escapedChars * 2);
+  // strict parsing, match closing "; chars
+  if (!str.startsWith('";')) {
+    throw SyntaxError('Expected ";');
+  }
+  return [strMatch, match.length + strMatch.length + 2]; // skip last ";
+}
+function expectKeyOrIndex(str) {
+  try {
+    return expectString(str);
+  } catch (err) {}
+  try {
+    return expectEscapedString(str);
+  } catch (err) {}
+  try {
+    return expectInt(str);
+  } catch (err) {
+    throw SyntaxError("Expected key or index");
+  }
+}
+function expectObject(str, cache) {
+  // O:<class name length>:"class name":<prop count>:{<props and values>}
+  // O:8:"stdClass":2:{s:3:"foo";s:3:"bar";s:3:"bar";s:3:"baz";}
+  const reObjectLiteral = /^O:(\d+):"([^"]+)":(\d+):\{/;
+  const [
+    objectLiteralBeginMatch /* classNameLengthMatch */,
+    ,
+    className,
+    propCountMatch,
+  ] = reObjectLiteral.exec(str) || [];
+  if (!objectLiteralBeginMatch) {
+    throw SyntaxError("Invalid input");
+  }
+  if (className !== "stdClass") {
+    throw SyntaxError(`Unsupported object type: ${className}`);
+  }
+  let totalOffset = objectLiteralBeginMatch.length;
+  const propCount = parseInt(propCountMatch, 10);
+  const obj = {};
+  cache([obj]);
+  str = str.substr(totalOffset);
+  for (let i = 0; i < propCount; i++) {
+    const prop = expectKeyOrIndex(str);
+    str = str.substr(prop[1]);
+    totalOffset += prop[1];
+    const value = expectType(str, cache);
+    str = str.substr(value[1]);
+    totalOffset += value[1];
+    obj[prop[0]] = value[0];
+  }
+  // strict parsing, expect } after object literal
+  if (str.charAt(0) !== "}") {
+    throw SyntaxError("Expected }");
+  }
+  return [obj, totalOffset + 1]; // skip final }
+}
+function expectClass(str, cache) {
+  // can't be well supported, because requires calling eval (or similar)
+  // in order to call serialized constructor name
+  // which is unsafe
+  // or assume that constructor is defined in global scope
+  // but this is too much limiting
+  throw Error("Not yet implemented");
+}
+function expectReference(str, cache) {
+  const reRef = /^[rR]:([1-9]\d*);/;
+  const [match, refIndex] = reRef.exec(str) || [];
+  if (!match) {
+    throw SyntaxError("Expected reference value");
+  }
+  return [cache.get(parseInt(refIndex, 10) - 1), match.length];
+}
+function expectArray(str, cache) {
+  const reArrayLength = /^a:(\d+):{/;
+  const [arrayLiteralBeginMatch, arrayLengthMatch] =
+    reArrayLength.exec(str) || [];
+  if (!arrayLengthMatch) {
+    throw SyntaxError("Expected array length annotation");
+  }
+  str = str.substr(arrayLiteralBeginMatch.length);
+  const array = expectArrayItems(str, parseInt(arrayLengthMatch, 10), cache);
+  // strict parsing, expect closing } brace after array literal
+  if (str.charAt(array[1]) !== "}") {
+    throw SyntaxError("Expected }");
+  }
+  return [array[0], arrayLiteralBeginMatch.length + array[1] + 1]; // jump over }
+}
+function expectArrayItems(str, expectedItems = 0, cache) {
+  let key;
+  let hasStringKeys = false;
+  let item;
+  let totalOffset = 0;
+  let items = [];
+  cache([items]);
+  for (let i = 0; i < expectedItems; i++) {
+    key = expectKeyOrIndex(str);
+    // this is for backward compatibility with previous implementation
+    if (!hasStringKeys) {
+      hasStringKeys = typeof key[0] === "string";
+    }
+    str = str.substr(key[1]);
+    totalOffset += key[1];
+    // references are resolved immediately, so if duplicate key overwrites previous array index
+    // the old value is anyway resolved
+    // fixme: but next time the same reference should point to the new value
+    item = expectType(str, cache);
+    str = str.substr(item[1]);
+    totalOffset += item[1];
+    items[key[0]] = item[0];
+  }
+  // this is for backward compatibility with previous implementation
+  if (hasStringKeys) {
+    items = Object.assign({}, items);
+  }
+  return [items, totalOffset];
+}

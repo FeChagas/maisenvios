@@ -66,7 +66,7 @@ License: You must have a valid license purchased only from themeforest(the above
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script src="dist/js/app.js"></script>
-        <script src="dist/routes/login.js"></script>
+        <script src="dist/routes/login.js?<?php echo $_ENV['HOST_URL']; ?>"></script>
         <!-- END: JS Assets-->
     </body>
 </html>

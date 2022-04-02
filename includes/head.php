@@ -1,7 +1,7 @@
 <?php
 global $_ENV;
 $_ENV['HOST_URL'] = 'https://maisenviosintegracao.com.br/painel';
-// $_ENV['HOST_URL'] = 'http://maisenvios.test';
+$_ENV['HOST_URL'] = 'http://maisenvios.test';
 ?>
 <head>
     <meta charset="utf-8">

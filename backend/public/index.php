@@ -2,6 +2,7 @@
 
 require dirname(__DIR__).'/vendor/autoload.php';
 
+use Maisenvios\Middleware\Client\MaisEnvios;
 use Maisenvios\Middleware\Controller\IntegrationController;
 use Maisenvios\Middleware\Controller\VtexController;
 use Maisenvios\Middleware\Model\SgpLog;
@@ -9,6 +10,12 @@ use Maisenvios\Middleware\Repository\SgpLogRepository;
 use Maisenvios\Middleware\Repository\ShopRepository;
 
 $is_dev = true;
+
+$maisEnvios = new MaisEnvios('asd', 'asd');
+debug($maisEnvios->isConnected());
+
+die;
+
 
 //Runs the feed process to record the VTEX Orders
 if (isset($_GET['shop_id']) && !is_null($_GET['shop_id']) && isset($_GET['method']) && !is_null($_GET['method']) && strcmp($_GET['method'], 'vtex-order-hook') === 0) {
@@ -32,7 +39,6 @@ if (isset($_GET['shop_id']) && !is_null($_GET['shop_id']) && isset($_GET['method
 } else {
     (new IntegrationController())->run();
 }
-
 
 /**
  * Print and stop execution
