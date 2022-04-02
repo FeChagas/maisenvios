@@ -2,7 +2,6 @@
 
 require dirname(__DIR__).'/vendor/autoload.php';
 
-use Maisenvios\Middleware\Client\MaisEnvios;
 use Maisenvios\Middleware\Controller\IntegrationController;
 use Maisenvios\Middleware\Controller\VtexController;
 use Maisenvios\Middleware\Model\SgpLog;
@@ -10,12 +9,6 @@ use Maisenvios\Middleware\Repository\SgpLogRepository;
 use Maisenvios\Middleware\Repository\ShopRepository;
 
 $is_dev = true;
-
-$maisEnvios = new MaisEnvios('asd', 'asd');
-debug($maisEnvios->isConnected());
-
-die;
-
 
 //Runs the feed process to record the VTEX Orders
 if (isset($_GET['shop_id']) && !is_null($_GET['shop_id']) && isset($_GET['method']) && !is_null($_GET['method']) && strcmp($_GET['method'], 'vtex-order-hook') === 0) {
@@ -44,7 +37,7 @@ if (isset($_GET['shop_id']) && !is_null($_GET['shop_id']) && isset($_GET['method
  * Print and stop execution
  * @param Array|Boolean $to_print 
  */
-function debug($to_print = false, $show_details = false) {
+function debug($to_print = null, $show_details = false) {
     global $is_dev;
 
     if ($is_dev) {
@@ -56,8 +49,14 @@ function debug($to_print = false, $show_details = false) {
         
         echo "line: $line\n";
         echo "file: $file\n\n";
-        if ($to_print !== false) {
-            print_r($to_print);
+        if (!is_null($to_print)) {
+            if (is_bool($to_print)) {
+                ($to_print) ? print_r('true') : print_r('false');
+            } else {
+                print_r($to_print);
+            }
+        } else {
+            print_r('INFO: a null value was passed or nothing was passed, either way nothing was returned');
         }
         if ($show_details) {
             print_r(array('GET' => $_GET, 'POST' => $_POST, 'SERVER' => $_SERVER));
