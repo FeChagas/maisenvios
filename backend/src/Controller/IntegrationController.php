@@ -56,11 +56,9 @@ class IntegrationController {
                 
                 case 'VTEX':
                     $integratesTo = $this->shopMetaRepo->findOneBy( ['name' => 'integrates_to', 'shopId' => $shop->getId()] );
-                    if ($integratesTo[0]->getValue() == 'SGP') {
-                        $this->integrateVtexToSgp($shop);
-                    } else if ($integratesTo[0]->getValue() == 'MaisEnvios') {
-                        $this->integrateVtexToMaisEnvios($shop);
-                    } else {
+                    if ( !! $integratesTo[0]->getValue() ) {
+                        $this->integrateVtex($shop, $integratesTo[0]->getValue());
+                    }  else {
                         $log = new SgpLog();
                         $log->setShopId( $shop->getId() );
                         $log->setStatus("O cliente {$shop->getName()} não definiu uma plataforma de integração");
@@ -190,7 +188,7 @@ class IntegrationController {
     /**
      * Run the VTEX integration workflow
      */
-    private function integrateVtexToSgp(Shop $shop) { 
+    private function integrateVtex(Shop $shop, string $integrates_to) { 
         if ($shop->getAccount() === null || $shop->getCustomerKey() === null || $shop->getCustomerToken() === null) {
             $log = new SgpLog();
             $log->setShopId( $shop->getId() );
@@ -198,7 +196,7 @@ class IntegrationController {
             $this->sgpLogRepo->create($log);
             throw new \Exception("Shop must have account, key and token", 1);            
         } else {
-            $vtexController = new VtexController($shop);
+            $vtexController = new VtexController($shop, $integrates_to);
             //Grabs the shop meta
             $shopMetas = $this->shopMetaRepo->findAll(['shopId' => $shop->getId()]);
             $steps = [];
@@ -228,10 +226,25 @@ class IntegrationController {
             }
             
             if (in_array('sgp_pre_post', $steps)) {
-                $orderQuery = ['storeId' => $shop->getId(), 'integrated' => 0];
+                // $orderQuery = ['storeId' => $shop->getId(), 'integrated' => 0];
+                $orderQuery = ['orderId' => 'SSD-1223012857211-01'];
                 $orders = $this->orderRepo->findAll($orderQuery);            
                 if (count($orders) > 0) {
-                    $vtexController->createSgpPrePost($orders);
+                    switch ($integrates_to) {
+                        case 'SGP':
+                            $vtexController->createSgpPrePost($orders);
+                            break;
+                        
+                        case 'MaisEnvios':
+                            $vtexController->createMaisEnviosPrePost($orders);
+                            break;
+                        default:
+                            $log = new SgpLog();
+                            $log->setShopId( $shop->getId() );
+                            $log->setStatus("Integração com {$integrates_to} na etapa sgp_pre_post da VTEX não está preparada");
+                            $this->sgpLogRepo->create($log);
+                            break;
+                    }
                 } else {
                     $log = new SgpLog();
                     $log->setShopId( $shop->getId() );
@@ -267,13 +280,6 @@ class IntegrationController {
                 }
             }
         }
-        return;
-    }
-
-    private function integrateVtexToMaisEnvios($shop) {
-        $credentials = maybe_unserialize( $shop->getSysKey() );
-        $maisEnvios = new MaisEnvios($credentials['username'], $credentials['password']);
-        debug($maisEnvios->isConnected());
         return;
     }
 }

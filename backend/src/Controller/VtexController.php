@@ -2,6 +2,7 @@
 namespace Maisenvios\Middleware\Controller;
 
 use Curl\Curl;
+
 use Maisenvios\Middleware\Model\Shop;
 use Maisenvios\Middleware\Model\Order;
 use Maisenvios\Middleware\Model\Shipping;
@@ -12,6 +13,15 @@ use Maisenvios\Middleware\Repository\SgpLogRepository;
 use Maisenvios\Middleware\Repository\OrderRepository;
 use Maisenvios\Middleware\Repository\ShippingRepository;
 use Maisenvios\Middleware\Client\Sgp;
+
+use Maisenvios\Middleware\Client\MaisEnvios;
+use Maisenvios\Middleware\Model\MaisEnviosPrePost;
+use Maisenvios\Middleware\Model\MaisEnvios\Sender;
+use Maisenvios\Middleware\Model\MaisEnvios\Delivery;
+use Maisenvios\Middleware\Model\MaisEnvios\Contact;
+use Maisenvios\Middleware\Model\MaisEnvios\PostObject;
+use Maisenvios\Middleware\Model\MaisEnvios\Complement;
+
 class VtexController {
     
     private $shop;
@@ -19,10 +29,11 @@ class VtexController {
     private $sgpLogRepo;
     private $vtexClient;
     private $sgpClient;
+    private $maisEnviosClient;
     private $shippingRepo;
     private $shippings = [];
 
-    public function __construct(Shop $shop)
+    public function __construct(Shop $shop, $integrates_to)
     {
         $this->sgpLogRepo = new SgpLogRepository();
         if (strcmp($shop->getEcommerce(), 'VTEX') !== 0) {
@@ -46,7 +57,23 @@ class VtexController {
         $this->shop = $shop;
         $this->orderRepo = new OrderRepository();
         $this->shippingRepo = new ShippingRepository();
-        $this->sgpClient = new Sgp($this->shop->getSysKey());
+        switch ($integrates_to) {
+            case 'SGP':
+                $this->sgpClient = new Sgp($this->shop->getSysKey());
+                break;
+
+            case 'MaisEnvios':
+                $credentials = maybe_unserialize($this->shop->getSysKey());
+                $this->maisEnviosClient = new MaisEnvios($credentials['username'], $credentials['password']);
+                break;
+            default:
+                $log = new SgpLog();
+                $log->setShopId( $shop->getId() );
+                $log->setStatus("A Loja não tem credenciais MaisEnvios definidas.");
+                $this->sgpLogRepo->create($log);
+                throw new \Exception("Shop must jave a SysKey set", 1); 
+                break;
+        }
     }
     /**
      * This function is responsible to get all the data from orders when VTEX calls from Order Feed
@@ -157,7 +184,7 @@ class VtexController {
      * Creates the prepost in SGPs API
      * @param array[Order] $orders
      */
-    public function createSgpPrePost($orders) {
+    public function createSgpPrePost(array $orders) {
         $shippings = $this->shippingRepo->findAll(['idShop' => $this->shop->getId(), 'active' => 1]);
         foreach ($orders as $order) {
             $isInvalidShipping = true;
@@ -199,7 +226,7 @@ class VtexController {
      * Check for existing preposts in SGP and updates the Order object
      * @param array[Order] $orders
      */
-    public function checkForExistingSgpPrePost($orders) {
+    public function checkForExistingSgpPrePost(array $orders) {
         $shippings = $this->shippingRepo->findAll(['idShop' => $this->shop->getId(), 'active' => 1]);
         foreach ($orders as $order) {
             $isInvalidShipping = true;
@@ -241,7 +268,7 @@ class VtexController {
      * Send the tracking information back to VTEX
      * @param array[Order] $orders
      */
-    public function updateVtexTrackingInformation($orders) {
+    public function updateVtexTrackingInformation(array $orders) {
         foreach ($orders as $order) {
             if($order->getTracking() !== null && $order->getInvoiceNumber() !== null) {
                 //Retrieve the full order from VTEX
@@ -322,6 +349,54 @@ class VtexController {
             ];
             $this->orderRepo->update(['id' => $order->getId()], $updateArgs);
         }
+        return;
+    }
+
+    /**
+     * Create a Prepost on MaisEnvios plataform
+     */
+    public function createMaisEnviosPrePost(array $orders) {
+        if (!$this->maisEnviosClient->isConnected()) {
+            $log = new SgpLog();
+            $log->setShopId( $this->shop->getId() );
+            $log->setStatus("As credenciais de autenticação com a Mais Envios não são validas.");
+            $this->sgpLogRepo->create($log);
+            throw new \Exception("Invalid credentials", 1);    
+        } else {
+            $shippings = $this->shippingRepo->findAll(['idShop' => $this->shop->getId(), 'active' => 1]);
+            foreach ($orders as $order) {
+                $isInvalidShipping = true;
+                foreach ($shippings as $shipping) {
+                    $fullOrder = $this->vtexClient->getOrder($order->getOrderId());
+                    if (strcmp($fullOrder->shippingData->logisticsInfo[0]->deliveryCompany, $shipping->getName()) === 0) {
+                        $isInvalidShipping = false;
+                        $me = $this->maisEnviosClient->getMe();
+                        $customer = $this->maisEnviosClient->getCustomer($me->customers->id);
+                        $cardpostId = null;
+                        foreach ($customer->cardpost as $cardpost) {
+                            if (true === $cardpost->principal) {
+                                $cardpostId = $cardpost->cardpost->id;
+                            }
+                        }
+                        $prepost = MaisEnviosPrePost::createFromVtex($fullOrder, $shipping->getCorreios(), $cardpostId);
+                        debug($prepost);
+                    }
+                    if ($isInvalidShipping) {
+                        $isInvalidShipping = true;
+                        $log = new SgpLog();
+                        $log->setOrderId($order->getOrderId());
+                        $log->setShopId( $this->shop->getId() );
+                        $log->setStatus("Transportadora inválida.");
+                        $log->setObjetos(json_encode($fullOrder));
+                        $this->sgpLogRepo->create($log);
+                        $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 'vtex_invalid_shipping_type']);
+                    }
+                }
+            }
+
+        }
+
+
         return;
     }
 }

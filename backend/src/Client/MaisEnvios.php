@@ -19,6 +19,7 @@ class MaisEnvios {
         $this->connection = new Curl();
         $this->connection->setHeader('Content-Type', 'application/json');
         $this->auth();
+        $this->connection->setHeader('Authorization', "Bearer {$this->token}");
     }
 
     public function isConnected() {
@@ -27,6 +28,16 @@ class MaisEnvios {
 
     public function prepost($payload) {
         $this->connection->post( $this->getEndpoint('/prepost'), $payload );
+        return $this->connection->response;
+    }
+
+    public function getCustomer($id) {
+        $this->connection->get( $this->getEndpoint("/customers/{$id}") );
+        return $this->connection->response;
+    }
+
+    public function getMe() {
+        $this->connection->get( $this->getEndpoint('/auth/me') );
         return $this->connection->response;
     }
         

@@ -49,7 +49,7 @@
                     </div>
                     <div class="form-check mr-2 mt-2 sm:mt-0">
                         <input id="sgp_pre_post" class="form-check-input" type="checkbox" value="sgp_pre_post" name="vtex_integration_step">
-                        <label class="form-check-label" for="sgp_pre_post">Realizer Pré Postagem na SPG</label>
+                        <label class="form-check-label" for="sgp_pre_post">Realizer Pré Postagem</label>
                     </div>
                     <div class="form-check mr-2 mt-2 sm:mt-0">
                         <input id="vtex_tracking_update" class="form-check-input" type="checkbox" value="vtex_tracking_update" name="vtex_integration_step">
