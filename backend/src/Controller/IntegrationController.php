@@ -134,13 +134,17 @@ class IntegrationController {
             //Get all active shippings of this shop
             $shippings = $this->shippingRepo->findAll(['idShop' => $shop->getId(), 'active' => 1]);
             foreach ($shippings as $shipping) {
-                $orderQuery = ['status'=> 'FAT', 'shipping_type' => $shipping->getName()];
-                $result = $convertizeClient->listOrders($orderQuery);
-                foreach ($result->results as $order) {
-                    $orderInDB = $this->orderRepo->findOneBy( ['orderId' => $order->id, 'storeId' => $shop->getId()] );
-                    if ( count($orderInDB) == 0 ) {
-                        $order = (new Order())->createFromConvertize($order, $shop->getId(), $shipping->getCorreios());
-                        $this->orderRepo->create($order);
+                foreach (['FAT', 'ETP'] as $status) {
+                    $orderQuery = ['status'=> $status, 'shipping_type' => $shipping->getName()];
+                    $result = $convertizeClient->listOrders($orderQuery);
+                    foreach ($result->results as $order) {
+                        if (count($order->trackers) === 0) {
+                            $orderInDB = $this->orderRepo->findOneBy( ['orderId' => $order->id, 'storeId' => $shop->getId()] );
+                            if ( count($orderInDB) == 0 ) {
+                                $order = (new Order())->createFromConvertize($order, $shop->getId(), $shipping->getCorreios());
+                                $this->orderRepo->create($order);
+                            }
+                        }
                     }
                 }
             }
