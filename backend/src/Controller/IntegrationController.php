@@ -171,7 +171,7 @@ class IntegrationController {
                     $this->orderRepo->update( ['orderId' => $order->getOrderId()] , ['integrated' => 1, 'tracking' => $objeto->objeto] );
                 }
                 //create the log
-                $log = SgpLog::createFromSgpResponse($shop->getId(), $order->id, $result);
+                $log = SgpLog::createFromSgpResponse($shop->getId(), $order->getOrderId(), $result);
                 $this->sgpLogRepo->create($log);
             }                       
         }
