@@ -255,4 +255,21 @@ class Delivery {
 
         return $this;
     }
+
+    public function toArray(){
+        return [
+            'delivery' => $this->delivery,
+            'contact' => $this->contact,
+            'department' => $this->department,
+            'name' => $this->name,
+            'branch' => $this->branch,
+            'cep' => $this->cep,
+            'address' => $this->address,
+            'neighborhood' => $this->neighborhood,
+            'city' => $this->city,
+            'state' => $this->state,
+            'number' => $this->number,
+            'extent' => $this->extent,
+        ];
+    }
 }

@@ -173,4 +173,17 @@ class Sender {
 
         return $this;
     }
+
+    public function toArray(){
+        return [
+            'contact' => $this->contact,
+            'cep' => $this->cep,
+            'address' => $this->address,
+            'neighborhood' => $this->neighborhood,
+            'city' => $this->city,
+            'state' => $this->state,
+            'number' => $this->number,
+            'extent' => $this->extent,
+        ];
+    }
 }

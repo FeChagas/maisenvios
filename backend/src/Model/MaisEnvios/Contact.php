@@ -171,4 +171,17 @@ class Contact {
 
         return $this;
     }
+
+    public function toArray(){
+        return [
+            'phone' => $this->phone,
+            'mail' => $this->mail,
+            'federalid' => $this->federalid,
+            'invoice' => $this->invoice,
+            'care' => $this->care,
+            'request' => $this->request,
+            'save' => $this->save,
+            'observation' => $this->observation,
+        ];
+    }
 }

@@ -170,4 +170,17 @@ class PostObject {
 
         return $this;
     }
+
+    public function toArray(){
+        return [
+            'object' => $this->object,
+            'package' => $this->package,
+            'mdp' => $this->mdp,
+            'ar' => $this->ar,
+            'ownhand' => $this->ownhand,
+            'weight' => $this->weight,
+            'quantity' => $this->quantity,
+            'type' => $this->type,
+        ];
+    }
 }

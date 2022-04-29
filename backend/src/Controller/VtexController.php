@@ -378,8 +378,11 @@ class VtexController {
                                 $cardpostId = $cardpost->cardpost->id;
                             }
                         }
-                        $prepost = MaisEnviosPrePost::createFromVtex($fullOrder, $shipping->getCorreios(), $cardpostId);
-                        debug($prepost);
+                        $me = $this->maisEnviosClient->getMe();
+                        $object = MaisEnviosPrePost::createFromVtex($fullOrder, $shipping->getCorreios(), $cardpostId, $me->customers->id);
+                        $prepost = $object->toJson();
+                        $result = $this->maisEnviosClient->prepost($prepost);
+                        debug([$result, $prepost]);
                     }
                     if ($isInvalidShipping) {
                         $isInvalidShipping = true;

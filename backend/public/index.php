@@ -56,7 +56,7 @@ function debug($to_print = null, $show_details = false) {
                 print_r($to_print);
             }
         } else {
-            print_r('INFO: a null value was passed or nothing was passed, either way nothing was returned');
+            print_r('INFO: a null value was passed or nothing was passed, either way nothing to show.');
         }
         if ($show_details) {
             print_r(array('GET' => $_GET, 'POST' => $_POST, 'SERVER' => $_SERVER));

@@ -27,10 +27,10 @@ class MaisEnviosPrePost {
 
     /**
      * Set the value of sender
-     *
+     * @param $sender Sender|string Expect either an object of type Sender or a string containg the Sender's id
      * @return  self
      */ 
-    public function setSender(Sender $sender)
+    public function setSender($sender)
     {
         $this->sender = $sender;
 
@@ -177,7 +177,7 @@ class MaisEnviosPrePost {
         return $this;
     }
 
-    public static function createFromVtex($order, $service, $cardpost) {
+    public static function createFromVtex($order, $service, $cardpost, $sender) {
 
         $self = new MaisEnviosPrePost();
 
@@ -246,7 +246,7 @@ class MaisEnviosPrePost {
         $complement->setDiameter( $total_dimensions['diameter'] );
         $complement->setValue( $total_dimensions['value'] );
         $complement->setTotal( $total_dimensions['total'] );
-        $complement->setType( false );
+        $complement->setType( '002' );
 
         $self->setComplement( $complement );
 
@@ -256,7 +256,24 @@ class MaisEnviosPrePost {
 
         $self->setDc( $dc );
 
+        $self->setSender( $sender );
+
         return $self;
+    }
+
+    public function toJson() {
+        return json_encode(
+            [
+                'sender' => ( is_string($this->sender) ? $this->sender : $this->sender->toArray() ),
+                'delivery' => $this->delivery->toArray(),
+                'contact' => $this->contact->toArray(),
+                'object' => $this->object->toArray(),
+                'complement' => $this->complement->toArray(),
+                'service' => $this->service,
+                'cardpost' => $this->cardpost,
+                'dc' => $this->dc,
+            ]
+            );
     }
 }
 ?>

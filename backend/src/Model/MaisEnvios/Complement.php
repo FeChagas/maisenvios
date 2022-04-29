@@ -149,4 +149,16 @@ class Complement {
 
         return $this;
     }
+
+    public function toArray(){
+        return [
+            'height' => $this->height,
+            'width' => $this->width,
+            'length' => $this->length,
+            'value' => $this->value,
+            'total' => $this->total,
+            'diameter' => $this->diameter,
+            'type' => $this->type,
+        ];
+    }
 }
