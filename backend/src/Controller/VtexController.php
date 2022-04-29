@@ -96,7 +96,7 @@ class VtexController {
                             'invoiceNumber' => isset($fullOrder->packageAttachment->packages[0]->invoiceNumber) ? $fullOrder->packageAttachment->packages[0]->invoiceNumber : null,
                             'tracking' => isset($result->retorno->objetos[0]->objeto) ? $result->retorno->objetos[0]->objeto : null
                         ];
-                        $updated = $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
+                        $updated = $this->orderRepo->update(['orderId' => $order->orderId], $updateOrderArgs);
                         if ($updated) {
                             array_push($toCommit, $order->handle);
                             $log = new SgpLog();
