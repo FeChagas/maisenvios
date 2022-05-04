@@ -430,7 +430,13 @@ class SgpPrePost {
         $thisObj->setCidade( $payload->shipping_detail_city );
         $thisObj->setUf( $payload->shipping_detail_state );
         $thisObj->setCep( $payload->shipping_detail_postcode );
-        $thisObj->setComplemento( $payload->shipping_detail_complement );
+
+        // Devido a uma particularidade da integração entre Amazon e Convertize
+        // é necessário buscar dados de complemento no campo de referencia
+        $complement = $payload->shipping_detail_complement;
+        $complement .= (!empty($complement)) ? ' | ' : '' . $payload->shipping_detail_reference;
+
+        $thisObj->setComplemento( $complement );
         $thisObj->setEmail( $payload->shipping_detail_email );
         $thisObj->setPeso( 100 );
         $thisObj->setComprimento( 11 );
