@@ -375,7 +375,7 @@ class VtexController {
                         $cardpostId = null;
                         foreach ($customer->cardpost as $cardpost) {
                             if (true === $cardpost->principal) {
-                                $cardpostId = $cardpost->cardpost->id;
+                                $cardpostId = $cardpost->id;
                             }
                         }
                         $me = $this->maisEnviosClient->getMe();

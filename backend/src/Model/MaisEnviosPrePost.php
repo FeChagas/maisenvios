@@ -177,9 +177,17 @@ class MaisEnviosPrePost {
         return $this;
     }
 
-    public static function createFromVtex($order, $service, $cardpost, $sender) {
+    public static function createFromVtex($order, $service, $cardpost, $sender = null) {
 
         $self = new MaisEnviosPrePost();
+
+        //The sender can be either the customer Id or the object
+        if ($sender === null) {
+            $sender = new Sender();
+            $sender->setCep('');
+        }
+
+        $self->setSender( $sender );
 
         $dc = [];
         $total_dimensions = [
@@ -188,24 +196,22 @@ class MaisEnviosPrePost {
             'length' => 0,
             'diameter' => 0,
             'value' => 0,
-            'total' => $order->value,
+            'total' => $order->value/100,
         ];
         $total_weigth = 0;
         foreach ($order->items as $key => $item) {
-            $total_weigth += $item->dimension->weight;
+            $total_weigth += $item->additionalInfo->dimension->weight;
             array_push($dc, [
                 'content' => $item->name,
                 'quantity' => $item->quantity,
-                'value' => $item->price
+                'value' => $item->price/100
             ]);
-            $total_dimensions['height'] += $item->dimension->height;
-            $total_dimensions['width'] += $item->dimension->width;
-            $total_dimensions['length'] += $item->dimension->length;
-            $total_dimensions['diameter'] += $item->dimension->cubicweight;
-            $total_dimensions['value'] += $item->price * $item->quantity;
+            $total_dimensions['height'] += $item->additionalInfo->dimension->height;
+            $total_dimensions['width'] += $item->additionalInfo->dimension->width;
+            $total_dimensions['length'] += $item->additionalInfo->dimension->length;
+            $total_dimensions['diameter'] += $item->additionalInfo->dimension->cubicweight;
+            $total_dimensions['value'] += ($item->price/100) * $item->quantity;
         }
-
-        
         $delivery = new Delivery();
         $delivery->setName($order->shippingData->address->receiverName);
         $delivery->setCep($order->shippingData->address->postalCode);
@@ -246,7 +252,7 @@ class MaisEnviosPrePost {
         $complement->setDiameter( $total_dimensions['diameter'] );
         $complement->setValue( $total_dimensions['value'] );
         $complement->setTotal( $total_dimensions['total'] );
-        $complement->setType( '002' );
+        $complement->setType( '001' );
 
         $self->setComplement( $complement );
 
@@ -255,8 +261,6 @@ class MaisEnviosPrePost {
         $self->setCardpost( $cardpost );
 
         $self->setDc( $dc );
-
-        $self->setSender( $sender );
 
         return $self;
     }
