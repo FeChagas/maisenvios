@@ -135,20 +135,28 @@ class IntegrationController {
             $shippings = $this->shippingRepo->findAll(['idShop' => $shop->getId(), 'active' => 1]);
             foreach ($shippings as $shipping) {
                 foreach (['FAT', 'ETP'] as $status) {
-                    $orderQuery = ['status'=> $status, 'shipping_type' => $shipping->getName()];
-                    $result = $convertizeClient->listOrders($orderQuery);
-                    foreach ($result->results as $order) {
-                        if (count($order->trackers) === 0) {
-                            $orderInDB = $this->orderRepo->findOneBy( ['orderId' => $order->id, 'storeId' => $shop->getId()] );
-                            if ( count($orderInDB) == 0 ) {
-                                $order = (new Order())->createFromConvertize($order, $shop->getId(), $shipping->getCorreios());
-                                $this->orderRepo->create($order);
+                    $orderQuery = ['status'=> $status, 'shipping_type' => $shipping->getName(), 'page' => 1];
+                    $hasNext = true;
+                    while ($hasNext) {
+                        $result = $convertizeClient->listOrders($orderQuery);
+                        $hasNext = false;
+                        foreach ($result->results as $order) {
+                            if (count($order->trackers) === 0) {
+                                $orderInDB = $this->orderRepo->findOneBy( ['orderId' => $order->id, 'storeId' => $shop->getId()] );
+                                if ( count($orderInDB) == 0 ) {
+                                    $order = (new Order())->createFromConvertize($order, $shop->getId(), $shipping->getCorreios());
+                                    $this->orderRepo->create($order);
+                                }
                             }
+                        }
+                        if( $result->next != null && $orderQuery['page'] < 5) {
+                            $hasNext = true;
+                            $orderQuery['page'] = $orderQuery['page']+1;
                         }
                     }
                 }
             }
-
+            
             $orders = $this->orderRepo->findAll(['storeId' => $shop->getId(), 'integrated' => 0]);
             foreach ($orders as $order) {
                 $fullOrder = $convertizeClient->getOrder($order->getOrderId());
