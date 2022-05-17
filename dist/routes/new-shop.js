@@ -49,31 +49,31 @@ if (SHOP_ID > 0) {
           HOST_URL +
           `/php/shop_meta/get.php?shop_id=${SHOP_ID}&name=integrates_to`,
         success: (metas) => {
+          shops.forEach((element) => {
+            $(`input[name=name]`).val(element.name);
+            $(`input[name=key_primary]`).val(element.key_primary);
+            $(`input[name=token_primary]`).val(element.token_primary);
+            $(`input[name=account]`).val(element.account);
+            $(`select[name=ecommerce] option[value=${element.ecommerce}]`).attr(
+              "selected",
+              "selected"
+            );
+            $("#ecommerce").trigger("change");
+            if ($("#integrates_to").val() == "SGP") {
+              $(`input[name=key_mais]`).val(element.key_mais);
+            } else if ($("#integrates_to").val() == "MaisEnvios") {
+              var maisEnviosCredencials = unserialize(element.key_mais);
+              console.log(maisEnviosCredencials);
+              $(`#maisenvios-username`).val(maisEnviosCredencials.username);
+              $(`#maisenvios-password`).val(maisEnviosCredencials.password);
+            }
+          });
           metas.forEach((element) => {
             $(`select[name=integrates_to] option[value=${element.value}]`).attr(
               "selected",
               "selected"
             );
             $("#integrates_to").trigger("change");
-            shops.forEach((element) => {
-              $(`input[name=name]`).val(element.name);
-              $(`input[name=key_primary]`).val(element.key_primary);
-              $(`input[name=token_primary]`).val(element.token_primary);
-              $(`input[name=account]`).val(element.account);
-              $(
-                `select[name=ecommerce] option[value=${element.ecommerce}]`
-              ).attr("selected", "selected");
-              $("#ecommerce").trigger("change");
-              console.log($("#integrates_to").val());
-              if ($("#integrates_to").val() == "SGP") {
-                $(`input[name=key_mais]`).val(element.key_mais);
-              } else if ($("#integrates_to").val() == "MaisEnvios") {
-                var maisEnviosCredencials = unserialize(element.key_mais);
-                console.log(maisEnviosCredencials);
-                $(`#maisenvios-username`).val(maisEnviosCredencials.username);
-                $(`#maisenvios-password`).val(maisEnviosCredencials.password);
-              }
-            });
           });
         },
       });
