@@ -40,9 +40,6 @@ class IntegrationController {
         //before each run, we warm up the logs just in case
         LogController::warmUp();
         //get the next shop to run
-        //this search grabs the log and check the most recent log of each shop
-        //and get the older from this group
-        // $shops = ($shopId === 0) ? $this->shopRepo->findNextToRun() : $this->shopRepo->findOneBy(['id' => $shopId]);
         $shops = ($shopId === 0) ? $this->shopRepo->findAll(['active' => 1], 0, ['lastRunAt' => 'ASC']) : $this->shopRepo->findOneBy(['id' => $shopId]);
         foreach ($shops as $shop) {            
             switch ($shop->getEcommerce()) {
@@ -202,7 +199,7 @@ class IntegrationController {
             $steps = [];
             $order_status = [];
             $endpoint_to_call = '';
-            foreach ($shopMetas as $key => $meta) {
+            foreach ($shopMetas as $meta) {
                 switch ($meta->getName()) {
                     case 'vtex_integration_step':
                         $steps = maybe_unserialize( $meta->getValue() );
@@ -226,8 +223,7 @@ class IntegrationController {
             }
             
             if (in_array('sgp_pre_post', $steps)) {
-                // $orderQuery = ['storeId' => $shop->getId(), 'integrated' => 0];
-                $orderQuery = ['orderId' => 'SSD-1223012857211-01'];
+                $orderQuery = ['storeId' => $shop->getId(), 'integrated' => 0];
                 $orders = $this->orderRepo->findAll($orderQuery);            
                 if (count($orders) > 0) {
                     switch ($integrates_to) {

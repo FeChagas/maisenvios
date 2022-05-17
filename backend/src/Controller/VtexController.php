@@ -363,13 +363,16 @@ class VtexController {
             $this->sgpLogRepo->create($log);
             throw new \Exception("Invalid credentials", 1);    
         } else {
+            //grabs all shippings from current shop
             $shippings = $this->shippingRepo->findAll(['idShop' => $this->shop->getId(), 'active' => 1]);
             foreach ($orders as $order) {
                 $isInvalidShipping = true;
                 foreach ($shippings as $shipping) {
                     $fullOrder = $this->vtexClient->getOrder($order->getOrderId());
+                    //checks if the shipppings is valid, if not update order status and remove it from queue
                     if (strcmp($fullOrder->shippingData->logisticsInfo[0]->deliveryCompany, $shipping->getName()) === 0) {
                         $isInvalidShipping = false;
+                        //get the shop data from MaisEnvios API
                         $me = $this->maisEnviosClient->getMe();
                         $customer = $this->maisEnviosClient->getCustomer($me->customers->id);
                         $cardpostId = null;
@@ -379,27 +382,28 @@ class VtexController {
                             }
                         }
                         $me = $this->maisEnviosClient->getMe();
+                        //generate an object from VTEX response
                         $object = MaisEnviosPrePost::createFromVtex($fullOrder, $shipping->getCorreios(), $cardpostId, $me->customers->id);
                         $prepost = $object->toJson();
                         $result = $this->maisEnviosClient->prepost($prepost);
-                        debug([$result, $prepost]);
+                        //if it returns a tracking code we update the order
+                        if (isset($result[0]->tag) && $result[0]->tag !== null) {
+                            $updateOrderArgs = [
+                                'service' => $shipping->getCorreios(),
+                                'integrated' => 1,
+                                'invoiceNumber' => isset($fullOrder->packageAttachment->packages[0]->invoiceNumber) ? $fullOrder->packageAttachment->packages[0]->invoiceNumber : null,
+                                'tracking' => isset($result[0]->tag) ? $result[0]->tag : null
+                            ];
+                            $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
+                        }
                     }
                     if ($isInvalidShipping) {
                         $isInvalidShipping = true;
-                        $log = new SgpLog();
-                        $log->setOrderId($order->getOrderId());
-                        $log->setShopId( $this->shop->getId() );
-                        $log->setStatus("Transportadora inválida.");
-                        $log->setObjetos(json_encode($fullOrder));
-                        $this->sgpLogRepo->create($log);
                         $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 'vtex_invalid_shipping_type']);
                     }
                 }
             }
-
         }
-
-
         return;
     }
 }

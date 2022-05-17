@@ -46,7 +46,7 @@ class MaisEnvios {
             "username" => $this->username,
             "password" => $this->password
         ]);
-        $this->token = ($this->connection->response->statusCode) ? false : $this->connection->response;
+        $this->token = (isset($this->connection->response->statusCode)) ? false : $this->connection->response;
         return;
     }
 
