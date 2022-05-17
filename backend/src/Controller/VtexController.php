@@ -1,24 +1,39 @@
 <?php
 namespace Maisenvios\Middleware\Controller;
 
+use Curl\Curl;
+
 use Maisenvios\Middleware\Model\Shop;
 use Maisenvios\Middleware\Model\Order;
+use Maisenvios\Middleware\Model\Shipping;
+use Maisenvios\Middleware\Model\SgpPrePost;
 use Maisenvios\Middleware\Client\Vtex;
 use Maisenvios\Middleware\Model\SgpLog;
 use Maisenvios\Middleware\Repository\SgpLogRepository;
 use Maisenvios\Middleware\Repository\OrderRepository;
 use Maisenvios\Middleware\Repository\ShippingRepository;
 use Maisenvios\Middleware\Client\Sgp;
+
+use Maisenvios\Middleware\Client\MaisEnvios;
+use Maisenvios\Middleware\Model\MaisEnviosPrePost;
+use Maisenvios\Middleware\Model\MaisEnvios\Sender;
+use Maisenvios\Middleware\Model\MaisEnvios\Delivery;
+use Maisenvios\Middleware\Model\MaisEnvios\Contact;
+use Maisenvios\Middleware\Model\MaisEnvios\PostObject;
+use Maisenvios\Middleware\Model\MaisEnvios\Complement;
+
 class VtexController {
     
     private $shop;
     private $orderRepo;
     private $sgpLogRepo;
     private $vtexClient;
+    private $sgpClient;
+    private $maisEnviosClient;
     private $shippingRepo;
     private $shippings = [];
 
-    public function __construct(Shop $shop)
+    public function __construct(Shop $shop, $integrates_to)
     {
         $this->sgpLogRepo = new SgpLogRepository();
         if (strcmp($shop->getEcommerce(), 'VTEX') !== 0) {
@@ -42,8 +57,29 @@ class VtexController {
         $this->shop = $shop;
         $this->orderRepo = new OrderRepository();
         $this->shippingRepo = new ShippingRepository();
-    }
+        switch ($integrates_to) {
+            case 'SGP':
+                $this->sgpClient = new Sgp($this->shop->getSysKey());
+                break;
 
+            case 'MaisEnvios':
+                $credentials = maybe_unserialize($this->shop->getSysKey());
+                $this->maisEnviosClient = new MaisEnvios($credentials['username'], $credentials['password']);
+                break;
+            default:
+                $log = new SgpLog();
+                $log->setShopId( $shop->getId() );
+                $log->setStatus("A Loja não tem credenciais MaisEnvios definidas.");
+                $this->sgpLogRepo->create($log);
+                throw new \Exception("Shop must jave a SysKey set", 1); 
+                break;
+        }
+    }
+    /**
+     * This function is responsible to get all the data from orders when VTEX calls from Order Feed
+     * 
+     * @return void
+     */
     public function processFeed() {
         //array with vtex order handlers 
         $toCommit = [];
@@ -127,9 +163,14 @@ class VtexController {
             $log->setObjetos(json_encode($result));
             $this->sgpLogRepo->create($log);
         }
+
+        return;
     }
 
-    public function hasValidShipping($orderShipping) {
+    /**
+     * Check if the passed shipping exists among the Shop's Shippings
+     */
+    public function hasValidShipping(string $orderShipping) {
         if (empty($this->shippings)) {
             $shippings = $this->shippingRepo->findAll(['idShop' => $this->shop->getId(), 'active' => 1]);
             foreach ($shippings as $shipping) {
@@ -137,5 +178,232 @@ class VtexController {
             }
         }
         return in_array($orderShipping, $this->shippings);
+    }
+
+    /**
+     * Creates the prepost in SGPs API
+     * @param array[Order] $orders
+     */
+    public function createSgpPrePost(array $orders) {
+        $shippings = $this->shippingRepo->findAll(['idShop' => $this->shop->getId(), 'active' => 1]);
+        foreach ($orders as $order) {
+            $isInvalidShipping = true;
+            foreach ($shippings as $shipping) {
+                $fullOrder = $this->vtexClient->getOrder($order->getOrderId());
+                if (strcmp($fullOrder->shippingData->logisticsInfo[0]->deliveryCompany, $shipping->getName()) === 0) {
+                    $isInvalidShipping = false;
+                    $sgpObj = SgpPrePost::createFromVtex($fullOrder, $shipping);
+                    $json = SgpPrePost::generatePayload([$sgpObj]);
+                    $result = $this->sgpClient->createPrePost($json);
+                    if ($result->retorno->status_processamento == 1) {
+                        $updateOrderArgs = [
+                            'service' => $shipping->getCorreios(),
+                            'integrated' => 1,
+                            'invoiceNumber' => isset($fullOrder->packageAttachment->packages[0]->invoiceNumber) ? $fullOrder->packageAttachment->packages[0]->invoiceNumber : null,
+                            'tracking' => isset($result->retorno->objetos[0]->objeto) ? $result->retorno->objetos[0]->objeto : null
+                        ];
+                        $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
+                        $log = SgpLog::createFromSgpResponse($this->shop->getId(), $order->getOrderId(), $result);
+                        $this->sgpLogRepo->create($log);
+                    }
+                }                            
+            }
+            if ($isInvalidShipping) {
+                $isInvalidShipping = true;
+                $log = new SgpLog();
+                $log->setOrderId($order->getOrderId());
+                $log->setShopId( $this->shop->getId() );
+                $log->setStatus("Transportadora inválida.");
+                $log->setObjetos(json_encode($fullOrder));
+                $this->sgpLogRepo->create($log);
+                $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 'vtex_invalid_shipping_type']);
+            }
+        }
+        return;
+    }
+
+    /**
+     * Check for existing preposts in SGP and updates the Order object
+     * @param array[Order] $orders
+     */
+    public function checkForExistingSgpPrePost(array $orders) {
+        $shippings = $this->shippingRepo->findAll(['idShop' => $this->shop->getId(), 'active' => 1]);
+        foreach ($orders as $order) {
+            $isInvalidShipping = true;
+            foreach ($shippings as $shipping) {
+                $fullOrder = $this->vtexClient->getOrder($order->getOrderId());
+                if (strcmp($fullOrder->shippingData->logisticsInfo[0]->deliveryCompany, $shipping->getName()) === 0) {
+                    $isInvalidShipping = false;
+                    if (isset( $fullOrder->packageAttachment->packages[0]->invoiceNumber ) && ! is_null( $fullOrder->packageAttachment->packages[0]->invoiceNumber )) {
+                        $args = [ $fullOrder->packageAttachment->packages[0]->invoiceNumber ];
+                        $result = $this->sgpClient->getByInvoiceNumbers( $args );
+                        if ($result->retorno->status_processamento == 1) {
+                            $updateOrderArgs = [
+                                'integrated' => 1,
+                                'invoiceNumber' => isset($fullOrder->packageAttachment->packages[0]->invoiceNumber) ? $fullOrder->packageAttachment->packages[0]->invoiceNumber : null,
+                                'tracking' => isset($result->retorno->objetos[0]->objeto) ? $result->retorno->objetos[0]->objeto : null
+                            ];
+                            $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
+                            $log = SgpLog::createFromSgpResponse($this->shop->getId(), $order->getOrderId(), $result);
+                            $this->sgpLogRepo->create($log);
+                        }
+                    }
+                }                            
+            }
+            if ($isInvalidShipping) {
+                $isInvalidShipping = true;
+                $log = new SgpLog();
+                $log->setOrderId($order->getOrderId());
+                $log->setShopId( $this->shop->getId() );
+                $log->setStatus("Transportadora inválida.");
+                $log->setObjetos(json_encode($fullOrder));
+                $this->sgpLogRepo->create($log);
+                $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 'vtex_invalid_shipping_type']);
+            }
+        }
+        return;
+    }
+
+    /**
+     * Send the tracking information back to VTEX
+     * @param array[Order] $orders
+     */
+    public function updateVtexTrackingInformation(array $orders) {
+        foreach ($orders as $order) {
+            if($order->getTracking() !== null && $order->getInvoiceNumber() !== null) {
+                //Retrieve the full order from VTEX
+                $fullOrder = $this->vtexClient->getOrder($order->getOrderId());
+
+                foreach ($fullOrder->packageAttachment->packages as $package) {
+                    if ($package->invoiceNumber == $order->getInvoiceNumber()) {
+                        // Prepare payload to create the event
+                        $updateOrderTrackingArgs = [
+                            "orderId" => $order->getOrderId(),
+                            "invoiceNumber" => $order->getInvoiceNumber(),
+                            "isDelivered" => false,
+                            "events" => [
+                                "description" => "Entregue a transportadora",
+                                "date" => date('Y-m-d')
+                            ]
+                        ];
+                        
+                        //Prepares the payload to actually send the tracking code
+                        $sendInvoiceInformationItems = [];
+                        foreach ($package->items as $item) {
+                            array_push( $sendInvoiceInformationItems, [
+                                    "id" => $fullOrder->items[ $item->itemIndex ]->id,
+                                    "price" => $item->price,
+                                    "quantity" => $item->quantity
+                                ]
+                            );
+                        }
+                        
+                        $sendInvoiceInformationArgs = [
+                            "type" => "Output",
+                            "trackingNumber" => $order->getTracking(),
+                            "issuanceDate" => $package->issuanceDate,
+                            "invoiceNumber" => $package->invoiceNumber,
+                            "invoiceValue" => $package->invoiceValue,
+                            "items" => $sendInvoiceInformationItems
+                        ];
+                        
+                        //send both the event and tracking code
+                        $sendInvoiceInformationResult = $this->vtexClient->sendInvoiceInformation($order->getOrderId(), $sendInvoiceInformationArgs);
+                        $updateOrderTrackingResult = $this->vtexClient->updateOrderTracking( $order->getOrderId(), $order->getInvoiceNumber(), $updateOrderTrackingArgs);
+                        if (isset($updateOrderTrackingResult->receipt) && isset($sendInvoiceInformationResult->receipt)) {
+                            $updateOrderArgs = [
+                                'integrated' => 'vtex_tracking_update',
+                            ];
+                            $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
+                            $log = new SgpLog();
+                            $log->setShopId( $this->shop->getId() );
+                            $log->setStatus( "Código de rastreio enviado" );
+                            $log->setObjetos( json_encode( [$updateOrderTrackingResult, $sendInvoiceInformationResult] ) );
+                            $this->sgpLogRepo->create($log);
+                        }
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    /**
+     * Calls custom endpoint sending the Order information
+     */
+    public function callEndpoint(Order $order, string $endpoint_to_call) {
+        $client = new Curl();
+        $payload = [
+            "origin" => $order->getOrigin(),
+            "orderId" => $order->getOrderId(),
+            "service" => $order->getService(),
+            "invoiceNumber" => $order->getInvoiceNumber(),
+            "tracking" => $order->getTracking(),
+            "createdAt" => $order->getCreatedAt(),
+            "updatedAt" => $order->getUpdatedAt()
+        ];                    
+        $client->post($endpoint_to_call, $payload);
+        if ( !$client->error ) {
+            $updateArgs = [
+                'integrated' => 'vtex_callback_success'
+            ];
+            $this->orderRepo->update(['id' => $order->getId()], $updateArgs);
+        }
+        return;
+    }
+
+    /**
+     * Create a Prepost on MaisEnvios plataform
+     */
+    public function createMaisEnviosPrePost(array $orders) {
+        if (!$this->maisEnviosClient->isConnected()) {
+            $log = new SgpLog();
+            $log->setShopId( $this->shop->getId() );
+            $log->setStatus("As credenciais de autenticação com a Mais Envios não são validas.");
+            $this->sgpLogRepo->create($log);
+            throw new \Exception("Invalid credentials", 1);    
+        } else {
+            //grabs all shippings from current shop
+            $shippings = $this->shippingRepo->findAll(['idShop' => $this->shop->getId(), 'active' => 1]);
+            foreach ($orders as $order) {
+                $isInvalidShipping = true;
+                foreach ($shippings as $shipping) {
+                    $fullOrder = $this->vtexClient->getOrder($order->getOrderId());
+                    //checks if the shipppings is valid, if not update order status and remove it from queue
+                    if (strcmp($fullOrder->shippingData->logisticsInfo[0]->deliveryCompany, $shipping->getName()) === 0) {
+                        $isInvalidShipping = false;
+                        //get the shop data from MaisEnvios API
+                        $me = $this->maisEnviosClient->getMe();
+                        $customer = $this->maisEnviosClient->getCustomer($me->customers->id);
+                        $cardpostId = null;
+                        foreach ($customer->cardpost as $cardpost) {
+                            if (true === $cardpost->principal) {
+                                $cardpostId = $cardpost->id;
+                            }
+                        }
+                        $me = $this->maisEnviosClient->getMe();
+                        //generate an object from VTEX response
+                        $object = MaisEnviosPrePost::createFromVtex($fullOrder, $shipping->getCorreios(), $cardpostId, $me->customers->id);
+                        $prepost = $object->toJson();
+                        $result = $this->maisEnviosClient->prepost($prepost);
+                        //if it returns a tracking code we update the order
+                        if (isset($result[0]->tag) && $result[0]->tag !== null) {
+                            $updateOrderArgs = [
+                                'service' => $shipping->getCorreios(),
+                                'integrated' => 1,
+                                'invoiceNumber' => isset($fullOrder->packageAttachment->packages[0]->invoiceNumber) ? $fullOrder->packageAttachment->packages[0]->invoiceNumber : null,
+                                'tracking' => isset($result[0]->tag) ? $result[0]->tag : null
+                            ];
+                            $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
+                        }
+                    }
+                    if ($isInvalidShipping) {
+                        $isInvalidShipping = true;
+                        $this->orderRepo->update(['orderId' => $order->getOrderId()], ['integrated' => 'vtex_invalid_shipping_type']);
+                    }
+                }
+            }
+        }
+        return;
     }
 }

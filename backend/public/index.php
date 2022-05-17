@@ -33,12 +33,11 @@ if (isset($_GET['shop_id']) && !is_null($_GET['shop_id']) && isset($_GET['method
     (new IntegrationController())->run();
 }
 
-
 /**
  * Print and stop execution
  * @param Array|Boolean $to_print 
  */
-function debug($to_print = false, $show_details = false) {
+function debug($to_print = null, $show_details = false) {
     global $is_dev;
 
     if ($is_dev) {
@@ -50,8 +49,14 @@ function debug($to_print = false, $show_details = false) {
         
         echo "line: $line\n";
         echo "file: $file\n\n";
-        if ($to_print !== false) {
-            print_r($to_print);
+        if (!is_null($to_print)) {
+            if (is_bool($to_print)) {
+                ($to_print) ? print_r('true') : print_r('false');
+            } else {
+                print_r($to_print);
+            }
+        } else {
+            print_r('INFO: a null value was passed or nothing was passed, either way nothing to show.');
         }
         if ($show_details) {
             print_r(array('GET' => $_GET, 'POST' => $_POST, 'SERVER' => $_SERVER));

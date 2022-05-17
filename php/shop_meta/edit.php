@@ -10,7 +10,7 @@ $response = [
 
 if ($_GET && isset($_GET['shop_id']) && !is_null($_GET['shop_id'])) {
     $queries = [];
-    $valid_params = ["vtex_integration_step", "vtex_order_status", "vtex_endpoint_to_call"];
+    $valid_params = ["vtex_integration_step", "vtex_order_status", "vtex_endpoint_to_call", "integrates_to"];
     foreach ($valid_params as $key) {
         if($_POST && isset($_POST[$key]) && !is_null($_POST[$key])) {
 

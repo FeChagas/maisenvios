@@ -29,8 +29,7 @@ $(document).ready(() => {
             CURRENT_SHOP = element;
             $(`#${element.ecommerce}`).show();
 
-            actionUrl =
-              HOST_URL + `/php/integration/get.php?shop_id=${SHOP_ID}`;
+            actionUrl = HOST_URL + `/php/shop_meta/get.php?shop_id=${SHOP_ID}`;
             $.ajax({
               type: "GET",
               url: actionUrl,
@@ -93,7 +92,7 @@ $(document).ready(() => {
               }
 
               var actionUrl =
-                HOST_URL + `/php/integration/edit.php?shop_id=${SHOP_ID}`;
+                HOST_URL + `/php/shop_meta/edit.php?shop_id=${SHOP_ID}`;
               $.ajax({
                 type: "POST",
                 data: payload,
