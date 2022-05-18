@@ -158,7 +158,7 @@ class IntegrationController {
                                 }
                             }
                         }
-                        if( $result->next != null && $orderQuery['page'] < 5) {
+                        if( $result->next != null && $orderQuery['page'] < 10) {
                             $hasNext = true;
                             $orderQuery['page'] = $orderQuery['page']+1;
                         }
