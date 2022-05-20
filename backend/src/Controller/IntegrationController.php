@@ -166,31 +166,46 @@ class IntegrationController {
                 }
             }
             
-            $orders = $this->orderRepo->findAll(['storeId' => $shop->getId(), 'integrated' => 0]);
-            foreach ($orders as $order) {
-                $fullOrder = $convertizeClient->getOrder($order->getOrderId());
-                //create the sgp object
-                $sgpObj = SgpPrePost::createFromConvertize($fullOrder, $order->getService());
-                //create the payload
-                $json = SgpPrePost::generatePayload([$sgpObj]);
-                //post it
-                $result = $sgpClient->createPrePost($json);
-                //Send the tracking code back
-                foreach ($result->retorno->objetos as $objeto) {
-                    $payloadStatus = ["status" => "ETP"];
-                    $payloadTracker = [
-                        "code" => $objeto->objeto,
-                        "status" => "ETP"
-                    ];
-                    //send the tracking code back and update the order status
-                    $convertizeClient->setOrderTracker($order->getOrderId(), $payloadTracker);
-                    $convertizeClient->setOrderStatus($order->getOrderId(), $payloadStatus);
-                    $this->orderRepo->update( ['orderId' => $order->getOrderId()] , ['integrated' => 1, 'tracking' => $objeto->objeto] );
+            $orders = $this->orderRepo->findAll(['storeId' => $shop->getId(), 'integrated' => 0], 1, ['updatedAt' => 'DESC']);
+            $orders_to_unlock = [];
+            while (count($orders) > 0) {
+                foreach ($orders as $key => $order) {
+                    //lock the order so other instances of this script wont get the same order
+                    $this->orderRepo->update( ['orderId' => $order->getOrderId()] , ['integrated' => 'locked'] );
+                    //save it to unlock later if needed
+                    array_push( $orders_to_unlock, $order->getOrderId() );
+                    //get the full order data from convertize
+                    $fullOrder = $convertizeClient->getOrder($order->getOrderId());
+                    //create the sgp object
+                    $sgpObj = SgpPrePost::createFromConvertize($fullOrder, $order->getService());
+                    //create the payload
+                    $json = SgpPrePost::generatePayload([$sgpObj]);
+                    //post it
+                    $result = $sgpClient->createPrePost($json);
+                    //Send the tracking code back
+                    foreach ($result->retorno->objetos as $objeto) {
+                        $payloadStatus = ["status" => "ETP"];
+                        $payloadTracker = [
+                            "code" => $objeto->objeto,
+                            "status" => "ETP"
+                        ];
+                        //send the tracking code back and update the order status
+                        $convertizeClient->setOrderTracker($order->getOrderId(), $payloadTracker);
+                        $convertizeClient->setOrderStatus($order->getOrderId(), $payloadStatus);
+                        $this->orderRepo->update( ['orderId' => $order->getOrderId()] , ['integrated' => 1, 'tracking' => $objeto->objeto] );
+                    }
+                    unset($orders[$key]);
                 }
-                //create the log
-                $log = SgpLog::createFromSgpResponse($shop->getId(), $order->getOrderId(), $result);
-                $this->sgpLogRepo->create($log);
-            }                       
+                $orders = $this->orderRepo->findAll(['storeId' => $shop->getId(), 'integrated' => 0], 1, ['updatedAt' => 'DESC']);
+            }
+
+            //unlock remain orders
+            $orders = $this->orderRepo->findAll(['storeId' => $shop->getId(), 'integrated' => 'locked']);
+            foreach ($orders as $order) {
+                if (in_array($order->getOrderId(), $orders_to_unlock)) {
+                    $this->orderRepo->update( ['orderId' => $order->getOrderId()] , ['integrated' => 0] );
+                }
+            }
         }
     }
 
