@@ -7,6 +7,7 @@ use Maisenvios\Middleware\Controller\VtexController;
 use Maisenvios\Middleware\Model\SgpLog;
 use Maisenvios\Middleware\Repository\SgpLogRepository;
 use Maisenvios\Middleware\Repository\ShopRepository;
+use Maisenvios\Middleware\Repository\ShopMetaRepository;
 
 $is_dev = true;
 
@@ -22,7 +23,8 @@ if (isset($_GET['shop_id']) && !is_null($_GET['shop_id']) && isset($_GET['method
 
         $shops = (new ShopRepository())->findOneBy(['id' => $_GET['shop_id']]);
         foreach ($shops as $shop) {
-            (new VtexController($shop))->processFeed();
+            $integrates_to_meta = (new ShopMetaRepository)->findOneBy(['shopId' => $shop->getId(), 'name' => 'integrates_to']);
+            (new VtexController($shop, $integrates_to_meta[0]->getValue()))->processFeed();
         }
     }
 // Run the integration to a specific shop

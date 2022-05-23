@@ -33,7 +33,7 @@ class VtexController {
     private $shippingRepo;
     private $shippings = [];
 
-    public function __construct(Shop $shop, $integrates_to)
+    public function __construct(Shop $shop, $integrates_to = 'SGP')
     {
         $this->sgpLogRepo = new SgpLogRepository();
         if (strcmp($shop->getEcommerce(), 'VTEX') !== 0) {
@@ -155,7 +155,7 @@ class VtexController {
             }
         }
 
-        if (! empty($toCommit)) {
+        if (count($toCommit) > 0) {
             $result = $this->vtexClient->commit($toCommit);
             $log = new SgpLog();
             $log->setShopId( $this->shop->getId() );
