@@ -50,6 +50,16 @@ if (SHOP_ID > 0) {
           `/php/shop_meta/get.php?shop_id=${SHOP_ID}&name=integrates_to`,
         success: (metas) => {
           shops.forEach((element) => {
+            //Atualiza o campo integrates_to
+            metas.forEach((meta) => {
+              $(`select[name=integrates_to] option[value=${meta.value}]`).attr(
+                "selected",
+                "selected"
+              );
+              $("#integrates_to").trigger("change");
+            });
+
+            //atualiza demais campos
             $(`input[name=name]`).val(element.name);
             $(`input[name=key_primary]`).val(element.key_primary);
             $(`input[name=token_primary]`).val(element.token_primary);
@@ -59,21 +69,16 @@ if (SHOP_ID > 0) {
               "selected"
             );
             $("#ecommerce").trigger("change");
+
+            //baseado no valor do campo integrates_to
+            //pega as credenciais correspondentes
             if ($("#integrates_to").val() == "SGP") {
               $(`input[name=key_mais]`).val(element.key_mais);
             } else if ($("#integrates_to").val() == "MaisEnvios") {
               var maisEnviosCredencials = unserialize(element.key_mais);
-              console.log(maisEnviosCredencials);
               $(`#maisenvios-username`).val(maisEnviosCredencials.username);
               $(`#maisenvios-password`).val(maisEnviosCredencials.password);
             }
-          });
-          metas.forEach((element) => {
-            $(`select[name=integrates_to] option[value=${element.value}]`).attr(
-              "selected",
-              "selected"
-            );
-            $("#integrates_to").trigger("change");
           });
         },
       });
@@ -127,7 +132,6 @@ $("#new-shop").submit(function (e) {
           url: HOST_URL + `/php/shop_meta/edit.php?shop_id=${SHOP_ID}`,
           data: { integrates_to: $("#integrates_to").val() },
           success: (data) => {
-            console.log(data);
             Swal.fire({
               title: "Sucesso!",
               text: "Cadastro efetuado com sucesso",
@@ -240,7 +244,6 @@ function unserialize(str) {
     }
     return expectType(str, initCache())[0];
   } catch (err) {
-    console.error(err);
     return false;
   }
 }
