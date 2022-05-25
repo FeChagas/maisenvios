@@ -33,5 +33,10 @@ class Lojaintegrada {
         $this->connection->put("{$this->endpoint}/pedido_envio/{$packageId}", ["objeto" => $trackingId]);
         return $this->connection->response;
     }
+
+    public function updateOrderStatus($orderId, $statusCode) {
+        $this->connection->put("{$this->endpoint}/situacao/pedido/{$orderId}", ["codigo" => $statusCode]);
+        return $this->connection->response;
+    }
 }
 ?>

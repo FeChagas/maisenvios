@@ -253,4 +253,14 @@ class Order {
         $obj->setIntegrated( 0 );
         return $obj;
     }
+
+    public static function createFromLojaIntegrada($order, $storeId, $service) {
+        $obj = new Order();
+        (isset($order->numero)) ? $obj->setOrderId( $order->numero ) : null;
+        $obj->setOrigin( 'LojaIntegrada' );
+        (isset($service)) ? $obj->setService( $service ) : null;
+        (isset($storeId)) ? $obj->setStoreId( $storeId ) : null;
+        $obj->setIntegrated( 0 );
+        return $obj;
+    }
 }

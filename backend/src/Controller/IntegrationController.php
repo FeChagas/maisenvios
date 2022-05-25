@@ -96,31 +96,30 @@ class IntegrationController {
             $ordersResponse = $lojaIntegradaClient->listOrders( $orderQuery );
             if ($ordersResponse->objects) {
                 foreach ($ordersResponse->objects as $order) {
-                    $logHistory = $this->sgpLogRepo->findOneBy(['shopId' => $shop->getId(), 'orderId' => $order->numero, 'status_processamento' => 1]);
-                    if (!$logHistory) {
+                    $orderInDB = $this->orderRepo->findOneBy(['storeId' => $shop->getId(), 'orderId' => $order->numero]);
+                    if (count($orderInDB) <= 0) {
                         $fullOrder = $lojaIntegradaClient->getOrder($order->numero);
                         $shipping = $this->shippingRepo->findOneBy([ 'idShop' => $shop->getId(), 'name' => $fullOrder->envios[0]->forma_envio->nome ]);
                         if(count($shipping) > 0) {
-                            $sgpObj = SgpPrePost::createFromLojaintegrada($fullOrder, $shipping[0]);
-                            $json = SgpPrePost::generatePayload([$sgpObj]);
-                            $result = $sgpClient->createPrePost($json);
-                            $log = SgpLog::createFromSgpResponse($shop->getId(), $fullOrder->numero, $result);
-                            $this->sgpLogRepo->create($log);
-                        } else {
-                            $log = new SgpLog();
-                            $log->setShopId( $shop->getId() );
-                            $log->setOrderId($fullOrder->numero);
-                            $log->setStatus("Forma de envio {$fullOrder->envios[0]->forma_envio->nome} não encontrada");
-                            $this->sgpLogRepo->create($log);
+                            $orderObj = Order::createFromLojaIntegrada($fullOrder, $shop->getId() ,$shipping[0]->getCorreios());
+                            $this->orderRepo->create($orderObj);                            
                         }
                     }
                 }
-            } else {
-                $log = new SgpLog();
-                $log->setShopId( $shop->getId() );
-                $log->setStatus( "nenhum pedido encontrado" );
-                $log->setObjetos( json_encode( $orderQuery ) );
-                $this->sgpLogRepo->create($log);
+            }
+
+            $orders = $this->orderRepo->findAll(['storeId' => $shop->getId(), 'integrated' => 0]);
+            foreach ($orders as $order) {
+                $fullOrder = $lojaIntegradaClient->getOrder($order->getOrderId());
+                $sgpObj = SgpPrePost::createFromLojaintegrada($fullOrder, $order->getService());
+                $json = SgpPrePost::generatePayload([$sgpObj]);
+                $result = $sgpClient->createPrePost($json);
+                foreach ($result->retorno->objetos as $objeto) {
+                    //send the tracking code back and update the order status
+                    $lojaIntegradaClient->addShippingCode($fullOrder->envios[0]->id, $objeto->objeto);
+                    $lojaIntegradaClient->updateOrderStatus($order->getOrderId(), 'pedido_enviado');
+                    $this->orderRepo->update( ['orderId' => $order->getOrderId(), 'storeId' => $shop->getId()] , ['integrated' => 1, 'tracking' => $objeto->objeto] );
+                }
             }
         }
         return;

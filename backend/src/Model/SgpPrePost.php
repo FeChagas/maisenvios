@@ -382,7 +382,7 @@ class SgpPrePost {
         return $this;
     }
 
-    public static function createFromLojaintegrada($payload, $shipping) {
+    public static function createFromLojaintegrada($payload, $service_code) {
         $thisObj = new SgpPrePost();
         $date = (new \DateTime())->format('Y-m-d H:i:s');
         $thisObj->setIdentificador( $payload->numero );
@@ -411,7 +411,7 @@ class SgpPrePost {
         $thisObj->setComprimento( $comprimento );
         $thisObj->setLargura( $largura );
         $thisObj->setAltura( $altura );
-        $thisObj->setServico_correios( $shipping->getCorreios() );
+        $thisObj->setServico_correios( $service_code );
         $thisObj->setObservacao("Mensagem automática: Pedido nº '{$payload->numero} integrado via Painel Integrador +Envios ({$date})");
         
         return $thisObj;
