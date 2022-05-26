@@ -117,7 +117,8 @@ class IntegrationController {
                 foreach ($result->retorno->objetos as $objeto) {
                     //send the tracking code back and update the order status
                     $lojaIntegradaClient->addShippingCode($fullOrder->envios[0]->id, $objeto->objeto);
-                    $lojaIntegradaClient->updateOrderStatus($order->getOrderId(), 'pedido_enviado');
+                    //por solicitação do cliente Germany não serão atualizado os status dos pedidos integrados
+                    // $lojaIntegradaClient->updateOrderStatus($order->getOrderId(), 'pedido_enviado');
                     $this->orderRepo->update( ['orderId' => $order->getOrderId(), 'storeId' => $shop->getId()] , ['integrated' => 1, 'tracking' => $objeto->objeto] );
                 }
             }
