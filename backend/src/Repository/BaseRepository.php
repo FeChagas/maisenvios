@@ -93,8 +93,9 @@ class BaseRepository {
                 $columns .= ', ';
                 $values .= ', ';
             }
+            $escapedValue = addslashes($value);
             $columns .= "`{$key}`";
-            $values .= "'{$value}'";
+            $values .= "'{$escapedValue}'";
             $first_run = false;
         }
         $query = "INSERT INTO `{$this->tablename}` ({$columns}) VALUES ({$values})";

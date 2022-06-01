@@ -195,7 +195,7 @@ class VtexController {
                     $sgpObj = SgpPrePost::createFromVtex($fullOrder, $shipping);
                     $json = SgpPrePost::generatePayload([$sgpObj]);
                     $result = $this->sgpClient->createPrePost($json);
-                    if ($result->retorno->status_processamento == 1) {
+                    if ($result->retorno->status_processamento === 1) {
                         $updateOrderArgs = [
                             'service' => $shipping->getCorreios(),
                             'integrated' => 1,
@@ -203,6 +203,9 @@ class VtexController {
                             'tracking' => isset($result->retorno->objetos[0]->objeto) ? $result->retorno->objetos[0]->objeto : null
                         ];
                         $this->orderRepo->update(['orderId' => $order->getOrderId()], $updateOrderArgs);
+                        $log = SgpLog::createFromSgpResponse($this->shop->getId(), $order->getOrderId(), $result);
+                        $this->sgpLogRepo->create($log);
+                    } else {
                         $log = SgpLog::createFromSgpResponse($this->shop->getId(), $order->getOrderId(), $result);
                         $this->sgpLogRepo->create($log);
                     }
