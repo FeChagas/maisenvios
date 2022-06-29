@@ -43,7 +43,7 @@ License: You must have a valid license purchased only from themeforest(the above
         </div>
         <!-- BEGIN: JS Assets-->
         <?php include 'includes/scripts.php'; ?>
-        <script src="dist/routes/ready-user.js"></script>
+        <script src="dist/routes/ready-user.js?<?php echo rand(100,999).'='.rand(100,999);?>"></script>
         <!-- END: JS Assets-->
     </body>
 </html>

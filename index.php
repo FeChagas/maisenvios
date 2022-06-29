@@ -63,10 +63,10 @@ License: You must have a valid license purchased only from themeforest(the above
             </div>
         </div>
         <!-- BEGIN: JS Assets-->
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js?<?php echo rand(100,999).'='.rand(100,999);?>"></script>
         <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-        <script src="dist/js/app.js"></script>
-        <script src="dist/routes/login.js"></script>
+        <script src="dist/js/app.js?<?php echo rand(100,999).'='.rand(100,999);?>"></script>
+        <script src="dist/routes/login.js?<?php echo rand(100,999).'='.rand(100,999);?>"></script>
         <!-- END: JS Assets-->
     </body>
 </html>
