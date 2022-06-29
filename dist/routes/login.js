@@ -16,7 +16,7 @@ $("#login").submit(function (e) {
       if (json[0].status === 1) {
         Swal.fire("Atenção!", "Usuário ou senha incorretos", "error");
       } else if (json[0].status === 0) {
-        location.href = HOST_URL + "/ready-shops.php";
+        location.href = "/ready-shops.php";
       }
     },
   });

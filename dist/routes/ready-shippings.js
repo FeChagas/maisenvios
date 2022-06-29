@@ -9,7 +9,7 @@ partes.forEach(function (parte) {
   var valor = chaveValor[1];
   data[chave] = valor;
 });
-actionUrl = HOST_URL + "/php/shipping/ready.php";
+actionUrl = "/php/shipping/ready.php";
 idShop = data["idShop"];
 $.ajax({
   type: "GET",

@@ -1,6 +1,6 @@
 const HOST_URL = '';
 
-actionUrl = HOST_URL + "/php/users/ready.php";
+actionUrl = "/php/users/ready.php";
 $.ajax({
   type: "GET",
   url: actionUrl,

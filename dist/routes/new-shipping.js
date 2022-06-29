@@ -4,7 +4,7 @@ $("#new-shipping").submit(function (e) {
   e.preventDefault(); // avoid to execute the actual submit of the form.
 
   var form = $("#new-shipping");
-  var actionUrl = HOST_URL + form.attr("action");
+  var actionUrl = form.attr("action");
 
   $.ajax({
     type: "POST",

@@ -13,7 +13,7 @@ $(document).ready(() => {
       );
     });
 
-    actionUrl = HOST_URL + `/php/shop/ready.php?id=${SHOP_ID}`;
+    actionUrl = `/php/shop/ready.php?id=${SHOP_ID}`;
     $.ajax({
       type: "GET",
       url: actionUrl,
@@ -25,7 +25,7 @@ $(document).ready(() => {
             CURRENT_SHOP = element;
             $(`#${element.ecommerce}`).show();
 
-            actionUrl = HOST_URL + `/php/shop_meta/get.php?shop_id=${SHOP_ID}`;
+            actionUrl = `/php/shop_meta/get.php?shop_id=${SHOP_ID}`;
             $.ajax({
               type: "GET",
               url: actionUrl,
@@ -82,13 +82,13 @@ $(document).ready(() => {
                     text: "Essa integração não tem suporte a configurações ainda.",
                     confirmButtonText: "Legal",
                   }).then((result) => {
-                    window.location.replace(HOST_URL + "/ready-shops.php");
+                    window.location.replace("/ready-shops.php");
                   });
                   break;
               }
 
               var actionUrl =
-                HOST_URL + `/php/shop_meta/edit.php?shop_id=${SHOP_ID}`;
+                `/php/shop_meta/edit.php?shop_id=${SHOP_ID}`;
               $.ajax({
                 type: "POST",
                 data: payload,
@@ -102,7 +102,7 @@ $(document).ready(() => {
                         text: "As configurações foram atualizadas.",
                         confirmButtonText: "Legal",
                       }).then(() => {
-                        window.location.replace(HOST_URL + "/ready-shops.php");
+                        window.location.replace("/ready-shops.php");
                       });
                       break;
 

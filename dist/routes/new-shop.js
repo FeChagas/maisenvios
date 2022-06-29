@@ -37,7 +37,7 @@ $("#integrates_to").on("change", () => {
 if (SHOP_ID > 0) {
   $.ajax({
     type: "GET",
-    url: HOST_URL + `/php/shop/ready.php?id=${SHOP_ID}`,
+    url: `/php/shop/ready.php?id=${SHOP_ID}`,
     success: function (shops) {
       $.ajax({
         type: "GET",
@@ -86,7 +86,7 @@ $("#new-shop").submit(function (e) {
   e.preventDefault(); // avoid to execute the actual submit of the form.
 
   var form = $("#new-shop");
-  var actionUrl = HOST_URL + form.attr("action");
+  var actionUrl = form.attr("action");
 
   var payload = {
     name: $("#name").val(),
@@ -125,7 +125,7 @@ $("#new-shop").submit(function (e) {
       } else if (data.success == true) {
         $.ajax({
           type: "POST",
-          url: HOST_URL + `/php/shop_meta/edit.php?shop_id=${SHOP_ID}`,
+          url: `/php/shop_meta/edit.php?shop_id=${SHOP_ID}`,
           data: { integrates_to: $("#integrates_to").val() },
           success: (data) => {
             Swal.fire({
@@ -133,7 +133,7 @@ $("#new-shop").submit(function (e) {
               text: "Cadastro efetuado com sucesso",
               confirmButtonText: "Legal",
             }).then((result) => {
-              window.location.replace(HOST_URL + "/ready-shops.php");
+              window.location.replace("/ready-shops.php");
             });
           },
         });
