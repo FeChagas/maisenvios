@@ -1,8 +1,4 @@
-var scripts = document.getElementsByTagName("script");
-var index = scripts.length - 1;
-var myScript = scripts[index];
-// myScript now contains our script object
-const HOST_URL = myScript.src.replace(/^[^\?]+\??/, "");
+const HOST_URL = '';
 
 $("#login").submit(function (e) {
   e.preventDefault(); // avoid to execute the actual submit of the form.
