@@ -50,7 +50,7 @@ class VtexService {
         ];
         $this->vtexClient->createFeed($feedArgs);
 
-        $url = "https://maisenviosintegracao.com.br/painel/backend/public/index.php?method=vtex-order-hook&shop_id={$this->shop->getId()}";
+        $url = "http://184.73.94.13/painel/backend/public/index.php?method=vtex-order-hook&shop_id={$this->shop->getId()}";
         $hookArgs = [
             "filter" => [
                 "type" => "FromWorkflow",
